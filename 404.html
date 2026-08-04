@@ -203,6 +203,7 @@
         attempt that finished ever wrote a row.
       </p>
       <div class="grid" id="wasteKpis"></div>
+      <div id="retryWrap"></div>
       <div id="cappedWrap"></div>
     </div>
 
@@ -852,6 +853,27 @@ async function loadCosts(){
       'booking — so some of this was given away for guides with nothing wrong '+
       'with them. Both are fixed; watch this number stop growing.</p>'
     : "");
+
+  // A SILENT RETRY IS INVISIBLE EVERYWHERE ELSE. The worker recovers without
+  // telling the traveller — which is right — so the only trace is the bill,
+  // unless this says so. Reported as wasted CALLS, never as dollars: those
+  // attempts recorded no tokens, and pricing them would be the confident wrong
+  // number this tab exists to stop producing.
+  const rt = d.retried || [];
+  $("#retryWrap").innerHTML = rt.length
+    ? '<h3 style="margin-top:18px">Guides that were built more than once</h3>' +
+      '<p class="muted" style="margin-top:-4px">The worker retries silently, so these ' +
+      'never looked like failures. Each wasted call was paid for in full and recorded ' +
+      'no tokens — so the cost below is a <b>floor</b>, not the total.</p>' +
+      '<table><thead><tr><th>Trip</th><th class="num">Calls thrown away</th>' +
+      '<th class="num">Recorded</th><th>When</th></tr></thead><tbody>' +
+      rt.map(function(r){
+        return "<tr><td>"+esc(String(r.destination||r.trip_id||"").slice(0,40))+
+          '</td><td class="num"><b style="color:#D64545">'+num(r.wasted_calls)+
+          '</b></td><td class="num">'+money(r.recorded_usd)+' <span class="muted">+ unrecorded</span>'+
+          "</td><td>"+ago(r.created_at)+"</td></tr>";
+      }).join("")+"</tbody></table>"
+    : "";
 
   $("#cappedWrap").innerHTML = (d.capped||[]).length
     ? '<table style="margin-top:10px"><thead><tr><th>Trip</th><th class="num">Looked up</th>'+
