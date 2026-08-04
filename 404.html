@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>vacayi · admin</title>
+<style>
+  :root{
+    --sunrise:#F7941D; --flamingo:#EE4D77; --orchid:#B0399F; --violet:#7B2FBE;
+    --paper:#FFF9F4; --card:#fff; --line:#F0E2D6; --ink:#241A2E; --soft:#7C6C80;
+    --ok:#2F9C6A; --okbg:#E7F5EE; --warn:#B8860B; --warnbg:#FBF1DC;
+    --bad:#D64545; --badbg:#FBE9E7; --mist:#FBF0E6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{background:linear-gradient(90deg,var(--sunrise),var(--flamingo),var(--violet));
+         color:#fff;padding:16px 22px;display:flex;align-items:center;gap:14px}
+  header h1{margin:0;font-size:19px;letter-spacing:-.3px}
+  header .who{margin-left:auto;font-size:12px;opacity:.9}
+  nav{background:var(--card);border-bottom:1px solid var(--line);padding:0 22px;
+      display:flex;gap:4px;overflow-x:auto}
+  nav button{background:none;border:0;padding:13px 15px;font:600 13px/1 inherit;
+             color:var(--soft);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+  nav button.on{color:var(--ink);border-bottom-color:var(--orchid)}
+  main{max-width:1200px;margin:0 auto;padding:22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+        padding:18px;margin-bottom:18px;box-shadow:0 6px 18px rgba(58,34,51,.05)}
+  .card h3{margin:0 0 14px;font-size:16px}
+  label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;
+        letter-spacing:1px;color:var(--soft);margin-bottom:6px}
+  input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);
+        border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+  textarea{min-height:56vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+           font-size:13px;line-height:1.5;white-space:pre;overflow-wrap:normal;overflow-x:auto}
+  button.btn{background:var(--ink);color:#fff;border:0;border-radius:10px;padding:10px 16px;
+         font-weight:700;cursor:pointer;font-size:13px}
+  button.grad{background:linear-gradient(90deg,var(--sunrise),var(--flamingo),var(--violet))}
+  button.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+  button.tiny{padding:5px 10px;font-size:12px}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .row.end{justify-content:flex-end}
+  .muted{color:var(--soft);font-size:13px}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));margin-bottom:18px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px}
+  .kpi .v{font-size:26px;font-weight:800;letter-spacing:-.5px}
+  .kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.9px;color:var(--soft);margin-top:2px}
+  .kpi .s{font-size:12px;color:var(--soft);margin-top:5px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--soft);font-size:11px;text-transform:uppercase;letter-spacing:.8px;
+     position:sticky;top:0;background:var(--card)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700}
+  .pill.on{background:var(--okbg);color:var(--ok)}
+  .pill.off{background:#F4EEF6;color:var(--soft)}
+  .pill.bad{background:var(--badbg);color:var(--bad)}
+  .pill.warn{background:var(--warnbg);color:var(--warn)}
+  .hide{display:none}
+  .bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;min-width:70px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--sunrise),var(--flamingo))}
+  .spark{display:flex;align-items:flex-end;gap:3px;height:56px}
+  .spark div{flex:1;background:linear-gradient(180deg,var(--flamingo),var(--orchid));
+             border-radius:3px 3px 0 0;min-height:2px}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+         background:var(--ink);color:#fff;padding:12px 22px;border-radius:999px;
+         font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9}
+  #toast.show{opacity:1}
+  .warnbox{background:var(--warnbg);border:1px solid #E8D5A8;border-radius:10px;
+           padding:12px;font-size:13px;margin-bottom:14px}
+  .err{color:var(--bad);font-size:13px;min-height:18px}
+  .scroll{max-height:460px;overflow:auto}
+</style>
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://pqpnspnyqpalwrohlcir.supabase.co; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<script>window.__VACAYI_ADMIN_CFG__={"url":"https://pqpnspnyqpalwrohlcir.supabase.co","key":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxcG5zcG55cXBhbHdyb2hsY2lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MDM1MTQsImV4cCI6MjEwMDA3OTUxNH0.xE8C7f4O_jdidMcAKwaRW4vUlNodJLTTXfraWA21WvA"};</script>
+</head>
+<body>
+<header>
+  <h1>🌴 vacayi admin</h1>
+  <!-- How old the numbers on screen are, in words. A dashboard that cannot say
+       when it last spoke to the database is asking to be trusted on nothing. -->
+  <span class="who" id="fresh" style="margin-left:auto"></span>
+  <button id="refreshNow" class="btn ghost tiny" style="margin-left:10px">Refresh</button>
+  <button id="autoToggle" class="btn ghost tiny" style="margin-left:6px">Pause</button>
+  <span class="who" id="who" style="margin-left:10px"></span>
+</header>
+
+<nav id="nav" class="hide">
+  <button data-view="overview" class="on">Overview</button>
+  <button data-view="costs">Costs</button>
+  <button data-view="users">Users</button>
+  <button data-view="credits">Credits</button>
+  <button data-view="quality">Quality</button>
+  <button data-view="learning">Learning</button>
+  <button data-view="ops">Operations</button>
+  <button data-view="pricing">Pricing</button>
+</nav>
+
+<main>
+  <section id="setup" class="card hide" style="max-width:520px;margin:40px auto">
+    <h3>One-time setup</h3>
+    <p class="muted">Paste your Supabase project URL and anon key. Stored only in this
+      browser. Both are in Supabase → Settings → API.</p>
+    <div style="margin-bottom:12px"><label>Project URL</label>
+      <input id="sbUrl" placeholder="https://abcdefgh.supabase.co"></div>
+    <div style="margin-bottom:16px"><label>Anon public key</label>
+      <input id="sbKey" placeholder="eyJhbGciOi..."></div>
+    <button class="btn grad" id="saveCfg" style="width:100%">Save</button>
+    <p class="err" id="cfgErr"></p>
+  </section>
+
+  <section id="login" class="card hide" style="max-width:420px;margin:60px auto">
+    <h3>Sign in</h3>
+    <p class="muted">Admin accounts only.</p>
+    <div style="margin-bottom:12px"><label>Email</label>
+      <input id="email" type="email" autocomplete="username"></div>
+    <div style="margin-bottom:16px"><label>Password</label>
+      <input id="password" type="password" autocomplete="current-password"></div>
+    <button class="btn grad" id="loginBtn" style="width:100%">Sign in</button>
+    <p class="err" id="loginErr"></p>
+    <p class="muted" style="margin-top:14px">Not an admin yet? In Supabase SQL Editor:<br>
+      <code>select public.make_admin('you@example.com');</code></p>
+    <button class="btn ghost" id="resetCfg" style="width:100%;margin-top:12px">Change project settings</button>
+  </section>
+
+  <div id="v-overview" class="view hide">
+    <div class="grid" id="kpis"></div>
+    <div class="card">
+      <h3>Spend, last 30 days</h3>
+      <div class="spark" id="spark"></div>
+      <div class="row" style="justify-content:space-between;margin-top:8px">
+        <span class="muted" id="sparkFrom"></span><span class="muted" id="sparkTo"></span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Recent generations</h3>
+      <div class="scroll"><table><thead><tr>
+        <th>When</th><th>Trip</th><th>OK</th><th class="num">Time</th>
+        <th class="num">Tokens</th><th class="num">Cost</th><th>Prompt</th><th>Error</th>
+      </tr></thead><tbody id="recent"></tbody></table></div>
+    </div>
+  </div>
+
+  <div id="v-costs" class="view hide">
+    <div class="grid" id="costKpis"></div>
+    <div id="costWarn"></div>
+    <div id="reconcile"></div>
+
+    <div class="card">
+      <h3>What a guide costs, by what was sold</h3>
+      <p class="muted" style="margin-top:-4px">
+        The pricing table. Margin is read at the <b>deepest discount sold</b> —
+        Pro annual, $0.0208 a credit — because an average rate is what hid the
+        losses migration 0098 had to correct. Only guides that were actually
+        charged count toward margin; the rest predate credits.
+      </p>
+      <div class="scroll"><table><thead><tr>
+        <th>Agent</th><th>Band</th><th class="num">Guides</th>
+        <th class="num">Stage 1</th><th class="num">Stage 2</th><th class="num">Google</th>
+        <th class="num">Avg total</th><th class="num">Range</th>
+        <th class="num">Credits</th><th class="num">Margin</th>
+      </tr></thead><tbody id="econ"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h3>Where the money goes</h3>
+      <div id="split"></div>
+    </div>
+
+    <div class="card">
+      <h3>Google, against the free allowance</h3>
+      <p class="muted" style="margin-top:-4px">
+        Never counted anywhere before migration 0100. Free to 10,000 calls per
+        SKU per month — at roughly 80% it is worth revisiting the shared Places
+        cache, which is <b>measured at 6.6%</b> and parked until then.
+      </p>
+      <div class="scroll"><table><thead><tr>
+        <th>Month</th><th>SKU</th><th class="num">Calls</th><th class="num">Free</th>
+        <th class="num">Billable</th><th class="num">Cost</th><th class="num">% of free</th>
+      </tr></thead><tbody id="google"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h3>The most expensive guides built</h3>
+      <p class="muted" style="margin-top:-4px">
+        An average hides the guide that cost four times the mean, and that guide
+        is where a cap or a prompt is going wrong.
+      </p>
+      <div class="scroll"><table><thead><tr>
+        <th>Trip</th><th>Shape</th><th class="num">Days</th>
+        <th class="num">Stage 1</th><th class="num">Stage 2</th><th class="num">Google</th>
+        <th class="num">Places</th><th class="num">Total</th><th class="num">Score</th>
+      </tr></thead><tbody id="worst"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h3>Waste</h3>
+      <p class="muted" style="margin-top:-4px">
+        Spend that bought nothing. Retries were invisible before 0100 — only the
+        attempt that finished ever wrote a row.
+      </p>
+      <div class="grid" id="wasteKpis"></div>
+      <div id="cappedWrap"></div>
+    </div>
+
+    <div class="card">
+      <h3>Daily breakdown</h3>
+      <div class="scroll"><table><thead><tr>
+        <th>Day</th><th class="num">Runs</th><th class="num">OK</th><th class="num">Failed</th>
+        <th class="num">Users</th><th class="num">Avg time</th>
+        <th class="num">Stage 1</th><th class="num">Stage 2</th><th class="num">Google</th>
+        <th class="num">Spend</th>
+      </tr></thead><tbody id="daily"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h3>By model and stage</h3>
+      <p class="muted" style="margin-top:-4px">
+        Each stage is its own row. The old table attributed a run's whole cost to
+        its Stage-2 model, so Gemini never appeared in a cost-by-model table at all.
+      </p>
+      <table><thead><tr><th>Model</th><th class="num">Stage</th><th class="num">Runs</th>
+        <th class="num">In</th><th class="num">Out</th><th class="num">Avg</th><th class="num">Total</th>
+      </tr></thead><tbody id="models"></tbody></table>
+    </div>
+
+    <div class="card">
+      <h3>Non-model rates</h3>
+      <p class="muted" style="margin-top:-4px">
+        <b>Verify these in the Cloud console.</b> Places pricing has changed twice
+        recently, and this field mask lands in the Enterprise/Atmosphere tier —
+        rating, review count, hours, price level, phone, website, accessibility
+        and editorial summary together are not the cheap tier. Editing a rate
+        applies retroactively to every stored run.
+      </p>
+      <table><thead><tr><th>SKU</th><th class="num">$ / call</th>
+        <th class="num">Free / month</th><th>Note</th><th></th>
+      </tr></thead><tbody id="apiPricing"></tbody></table>
+    </div>
+  </div>
+
+  <div id="v-users" class="view hide">
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <h3 style="margin:0;flex:1">Users by spend</h3>
+        <input id="userSearch" placeholder="Search…" style="max-width:220px">
+      </div>
+      <div class="scroll"><table><thead><tr>
+        <th>User</th><th class="num">Trips</th><th class="num">Guides</th>
+        <th class="num">Builds</th><th class="num">Failed</th>
+        <th class="num">Assistant</th><th class="num">Credits</th><th class="num">$ / credit</th>
+        <th class="num">30-day</th><th class="num">Total</th>
+        <th>Last active</th><th>Admin</th>
+      </tr></thead><tbody id="users"></tbody></table></div>
+      <p class="muted" style="margin-top:10px">
+        <b>Guides</b> is how many trips carry one. <b>Builds</b> counts every
+        successful generation, so a rebuilt guide is counted again — that column
+        being higher is normal, and it is what the guides actually cost in work.
+        <b>Assistant</b> is model calls made by the in-guide chat, which until
+        2026-08-04 were recorded nowhere at all.
+        Spend is the <b>whole bill</b> — planning, writing, Google and the
+        assistant. Before migration 0100 this table multiplied every user's spend
+        by their trip count (a cartesian join), reporting $259.97 against a real
+        $20.47. <b>$ / credit</b> above $0.0208 means that user costs more than
+        the deepest discount sells a credit for.
+      </p>
+    </div>
+  </div>
+
+  <div id="v-credits" class="view hide">
+    <div class="grid" id="credKpis"></div>
+
+    <div class="card">
+      <h3>Give someone credits</h3>
+      <p class="muted" style="margin-top:-6px">
+        Real balance on a real account, straight away. Use it for support, for a purchase
+        that never landed, to make up for a bad guide, or to stock a tester.
+      </p>
+      <div class="row">
+        <div style="flex:1;min-width:230px"><label>Who</label>
+          <input id="grantUser" placeholder="Press “grant” in the table below, or paste a user id"></div>
+        <div style="width:130px"><label>Credits</label>
+          <input id="grantAmount" type="number" min="1" max="10000" value="100"></div>
+        <div style="width:210px"><label>Reason</label>
+          <select id="grantReason">
+            <option value="support">Support fix</option>
+            <option value="testing">Testing</option>
+            <option value="bad guide">Made up for a bad guide</option>
+            <option value="purchase repair">Purchase that never landed</option>
+            <option value="goodwill">Goodwill</option>
+            <option value="beta tester">Beta tester</option>
+          </select></div>
+      </div>
+      <div style="margin-top:10px"><label>Note — stays on the lot forever</label>
+        <input id="grantNote" placeholder="What happened, in a sentence"></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn grad" id="grantBtn">Grant credits</button>
+        <span class="muted" id="grantWho"></span>
+      </div>
+      <p class="muted" style="margin-top:12px">
+        Recorded against your admin account, with the reason and note, in the traveller's
+        ledger. Granted credits <b>expire in 12 months</b> — only bought ones never do.
+        Pressing the button twice for the same grant is safe: the second press returns the
+        first lot instead of granting again.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <h3 style="margin:0;flex:1">Find someone</h3>
+        <input id="credSearch" placeholder="Email, @handle, name or id" style="max-width:270px">
+      </div>
+      <p class="muted" style="margin-top:-6px">
+        <b>Balance</b> already has any hold subtracted — that is what stops someone starting
+        four guides at once on one guide's worth of credits. <b>$/credit</b> in this table is
+        everything we have <i>ever</i> spent on this person's guides divided by the credits
+        they were charged, so it reads high for anyone with trips from before credits
+        existed: those are in the top half and not the bottom. The calibration table further
+        down is the honest one, because there both halves cover the same days.
+      </p>
+      <p class="muted" id="credPartial"></p>
+      <div class="scroll"><table><thead><tr>
+        <th>User</th><th class="num">Balance</th><th class="num">Held</th>
+        <th class="num">Granted</th><th class="num">Spent</th><th class="num">Guides</th>
+        <th class="num">$/credit</th><th>Pro</th><th></th>
+      </tr></thead><tbody id="credUsers"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h3>Ledger</h3>
+      <div id="credLedger"></div>
+    </div>
+
+    <div class="card">
+      <h3>Find a trip's charge</h3>
+      <p class="muted" style="margin-top:-6px">
+        For “I got charged twice for Rome”. Shows every charge on that trip, what it was
+        priced from, and what it would quote today.
+      </p>
+      <div class="row">
+        <input id="tripQ" placeholder="Trip id" style="flex:1;min-width:240px">
+        <button class="btn ghost" id="tripBtn">Look up</button>
+      </div>
+      <div id="tripOut" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h3>Holds that never finished</h3>
+      <p class="muted" style="margin-top:-6px">
+        Credits taken for a generation that never settled or failed — a killed worker, an
+        out-of-memory crash. Anything here older than a few hours is stuck: the credits are
+        gone and no failure was recorded, which is the one billing bug a user can't even
+        describe. Releasing returns the credits only; to actually rebuild, use Operations.
+      </p>
+      <table><thead><tr><th>Started</th><th>Trip</th><th>User</th><th class="num">Credits</th>
+        <th>Why</th><th></th></tr></thead><tbody id="credStuck"></tbody></table>
+    </div>
+
+    <div class="card">
+      <h3>What a credit really costs</h3>
+      <p class="muted" style="margin-top:-6px">
+        <b>$/credit is every dollar we spent generating that day, divided by the credits we
+        charged that day.</b> Both halves are deliberate: failed and free guides cost real
+        money, and a price that ignores them isn't a price. Keep it under about
+        <b>$0.02</b> — the packs sell at roughly $0.04–0.05 a credit, so that gap is the
+        margin. If a run of days sits above it, re-set <code>credit_price()</code> in a new
+        migration; that function is the only thing that charges. Days before credits shipped
+        show a cost with no credits beside it and read as “—”.
+      </p>
+      <div class="scroll"><table><thead><tr>
+        <th>Day</th><th class="num">Guides</th><th class="num">Credits spent</th>
+        <th class="num">Our cost</th><th class="num">$/credit</th>
+        <th class="num">Free</th><th class="num">Released</th><th class="num">Users</th>
+      </tr></thead><tbody id="credDaily"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h3>Where credits come from</h3>
+      <p class="muted" style="margin-top:-6px">
+        <b>Lapsed</b> is granted credits that expired unspent. A big number there means the
+        gift is too large or too quiet, not that people don't want it.
+      </p>
+      <table><thead><tr><th>Kind</th><th class="num">Lots</th><th class="num">Granted</th>
+        <th class="num">Used</th><th class="num">Lapsed unused</th><th>Last one</th>
+      </tr></thead><tbody id="credKinds"></tbody></table>
+    </div>
+
+    <div class="card">
+      <h3>The price list</h3>
+      <p class="muted" style="margin-top:-6px">
+        Read-only here on purpose: the store ids have to match what's registered with Apple
+        and Google, so a price change is a migration, not a text box.
+      </p>
+      <table><thead><tr><th>Product</th><th>Kind</th><th class="num">Credits</th>
+        <th class="num">Price</th><th class="num">Per credit</th><th>Store id</th>
+        <th class="num">Rollover</th><th>Live</th></tr></thead><tbody id="credProducts"></tbody></table>
+    </div>
+  </div>
+
+  <div id="v-quality" class="view hide">
+    <div class="grid" id="qualKpis"></div>
+    <div class="card">
+      <h3>Score over time</h3>
+      <p class="muted" style="margin-top:-6px">Every guide is checked automatically before it ships. This is the average, by day.</p>
+      <div id="qTrend"></div>
+    </div>
+    <div class="card">
+      <h3>Score by pipeline version</h3>
+      <p class="muted" style="margin-top:-6px">Did that prompt change actually help? Bump PIPELINE_VERSION when you change a prompt or a rule, and this table answers it.</p>
+      <table><thead><tr><th>Pipeline</th><th class="num">Guides</th><th class="num">Avg score</th>
+        <th class="num">Worst</th><th class="num">Had a hard fail</th><th class="num">Avg cost</th><th class="num">Avg time</th>
+      </tr></thead><tbody id="qVersions"></tbody></table>
+    </div>
+    <div class="card">
+      <h3>Which checks fail most</h3>
+      <p class="muted" style="margin-top:-6px">The top red row is the single best-value thing to fix next.</p>
+      <table><thead><tr><th>Check</th><th>Severity</th><th class="num">Guides hit</th>
+        <th>What it means</th><th>Last seen</th></tr></thead><tbody id="qFlags"></tbody></table>
+    </div>
+    <div class="card"><h3>What users praise</h3><div id="likedTally"></div></div>
+    <div class="card">
+      <h3>Recent feedback</h3>
+      <div class="scroll"><table><thead><tr><th>When</th><th class="num">Rating</th>
+        <th>Liked</th><th>Issue</th></tr></thead><tbody id="feedback"></tbody></table></div>
+    </div>
+  </div>
+
+  <div id="v-learning" class="view hide">
+    <div class="grid" id="learnKpis"></div>
+    <div class="card">
+      <h3>Complaints — what people told you is wrong</h3>
+      <p class="muted" style="margin-top:-6px">
+        The highest-signal rows you have: a user doing free QA on a specific, reproducible
+        failure, in their own words. Anything that repeats here deserves a deterministic
+        check in worker/src/quality/checks.js, so it fails a score before it reaches a person.
+      </p>
+      <div id="complaintTopics"></div>
+      <div class="scroll" style="margin-top:10px"><table><thead><tr><th>When</th><th>What they said</th>
+        <th>Topic</th><th>Sure?</th></tr></thead><tbody id="complaints"></tbody></table></div>
+    </div>
+    <div class="card">
+      <h3>What people ask the assistant to change</h3>
+      <p class="muted" style="margin-top:-6px">
+        Every edit is someone telling you what the guide got wrong, and where.
+        <b>Corrections</b> are defects worth chasing. <b>Additions</b> usually aren't —
+        "add my friend's birthday dinner" is something we could never have known.
+      </p>
+      <div id="editSections"></div>
+    </div>
+    <div class="card">
+      <h3>In their own words</h3>
+      <p class="muted" style="margin-top:-6px">The most recent requests. Read a dozen of these and the pattern is usually obvious.</p>
+      <div class="scroll"><table><thead><tr><th>When</th><th>Asked for</th>
+        <th>Part</th><th>Kind</th></tr></thead><tbody id="editRecent"></tbody></table></div>
+    </div>
+  </div>
+
+  <div id="v-ops" class="view hide">
+    <div class="card">
+      <h3>Generation queue</h3>
+      <table><thead><tr><th>Trip</th><th>Status</th><th class="num">Tries</th>
+        <th>Worker</th><th>Updated</th><th>Error</th><th></th></tr></thead>
+      <tbody id="jobs"></tbody></table>
+    </div>
+    <div class="card">
+      <h3>Failure patterns</h3>
+      <p class="muted" style="margin-top:-6px">Grouped so a repeated problem stands out.</p>
+      <table><thead><tr><th class="num">Count</th><th>Error</th></tr></thead>
+      <tbody id="errGroups"></tbody></table>
+    </div>
+  </div>
+
+  <div id="v-pricing" class="view hide">
+    <div class="card">
+      <h3>Model pricing</h3>
+      <div class="warnbox">These rates drive every cost number here.
+        <b>Verify against your vendor's current pricing page</b> — they were seeded from
+        published rates and vendors change prices.</div>
+      <table><thead><tr><th>Model</th><th class="num">Input $/Mtok</th>
+        <th class="num">Output $/Mtok</th><th></th></tr></thead><tbody id="pricing"></tbody></table>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.prototype.slice.call(document.querySelectorAll(s));
+// WHERE THE CONNECTION DETAILS COME FROM, in order.
+//
+// A HOSTED build has them baked in by scripts/build-admin-site.mjs, so there is
+// no setup screen to get through on a new device — and nothing secret is being
+// baked: the anon key ships inside every copy of the app already, and every
+// endpoint this console calls checks is_admin on the server. Publishing it
+// grants nobody anything.
+//
+// The saved copy is the fallback, so the local file keeps behaving exactly as
+// it did; and a build with neither still offers the setup screen rather than
+// failing at a blank page.
+let CFG = (window.__VACAYI_ADMIN_CFG__ || null) ||
+  JSON.parse(localStorage.getItem("vacayi_admin_cfg") || "null");
+let TOKEN = localStorage.getItem("vacayi_admin_token") || "";
+let USERS = [];
+
+const money = (n) => "$" + Number(n || 0).toFixed(Number(n) >= 10 ? 2 : 4);
+const num = (n) => Number(n || 0).toLocaleString();
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g,
+  (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ago = (d) => {
+  if (!d) return "—";
+  const s = (Date.now() - new Date(d)) / 1000;
+  if (s < 3600) return Math.round(s/60) + "m ago";
+  if (s < 86400) return Math.round(s/3600) + "h ago";
+  return Math.round(s/86400) + "d ago";
+};
+const kpi = (v,l,s) => '<div class="kpi"><div class="v">'+v+'</div><div class="l">'+l+'</div>'+
+  (s ? '<div class="s">'+s+'</div>' : '')+'</div>';
+
+function toast(msg, bad){
+  const t=$("#toast"); t.textContent=msg;
+  t.style.background = bad ? "#D64545" : "#241A2E";
+  t.classList.add("show"); setTimeout(function(){t.classList.remove("show")},2600);
+}
+function showSection(id){
+  ["setup","login"].forEach(function(s){ $("#"+s).classList.add("hide") });
+  if (id) $("#"+id).classList.remove("hide");
+}
+
+async function api(path, opts){
+  opts = opts || {};
+  const res = await fetch(CFG.url + "/functions/v1/admin" + path, Object.assign({}, opts, {
+    headers: Object.assign({
+      "content-type":"application/json", "apikey": CFG.key,
+      "authorization":"Bearer " + TOKEN
+    }, opts.headers || {})
+  }));
+  const data = await res.json().catch(function(){return {}});
+  if (res.status === 401){ signOut(); throw new Error("Session expired — sign in again."); }
+  if (!res.ok) throw new Error(data.error || ("HTTP "+res.status));
+  return data;
+}
+
+$("#saveCfg").onclick = function(){
+  const url = $("#sbUrl").value.trim().replace(/\/+$/,"");
+  const key = $("#sbKey").value.trim();
+  if(!url.startsWith("https://") || !key){ $("#cfgErr").textContent="Enter both values."; return; }
+  CFG = { url: url, key: key };
+  localStorage.setItem("vacayi_admin_cfg", JSON.stringify(CFG));
+  showSection("login");
+};
+$("#resetCfg").onclick = function(){
+  localStorage.removeItem("vacayi_admin_cfg");
+  // A HOSTED build cannot be reset into a setup screen — its connection is part
+  // of the page, and blanking it would strand somebody on a form asking for
+  // values they have no reason to know. It signs out instead, which is what
+  // "reset" is actually for on a device you are handing back.
+  if (window.__VACAYI_ADMIN_CFG__) { signOut(); return; }
+  CFG = null; showSection("setup");
+};
+
+$("#loginBtn").onclick = async function(){
+  $("#loginErr").textContent="";
+  try{
+    const res = await fetch(CFG.url + "/auth/v1/token?grant_type=password", {
+      method:"POST", headers:{ "content-type":"application/json", "apikey": CFG.key },
+      body: JSON.stringify({ email:$("#email").value.trim(), password:$("#password").value })
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error_description || d.msg || "Sign in failed");
+    TOKEN = d.access_token;
+    localStorage.setItem("vacayi_admin_token", TOKEN);
+    $("#who").textContent = $("#email").value.trim();
+    await boot();
+  }catch(e){ $("#loginErr").textContent = e.message; }
+};
+
+function signOut(){
+  TOKEN=""; localStorage.removeItem("vacayi_admin_token");
+  $("#nav").classList.add("hide");
+  $$(".view").forEach(function(v){v.classList.add("hide")});
+  showSection("login");
+}
+
+// ---------------------------------------------------------------
+// LIVE, RATHER THAN A SNAPSHOT OF WHENEVER IT WAS OPENED.
+//
+// A console left open all afternoon showing morning's numbers is worse than one
+// that is obviously stale, because nothing on the page says which it is. So the
+// visible tab reloads itself on a timer and the header states, in words, how
+// old what you are reading is.
+//
+// Three rules that make an auto-refresh safe rather than annoying:
+//
+//   - ONLY THE VISIBLE TAB. Refreshing all eight would multiply the load by
+//     eight to repaint seven things nobody is looking at.
+//   - PAUSED WHEN THE PAGE IS HIDDEN. A background tab must not keep polling a
+//     database for a screen nobody can see; it resumes, and refreshes at once,
+//     when the tab comes back.
+//   - NEVER OVERLAPPING. A slow query would otherwise stack requests behind
+//     each other until the tab is unusable.
+let CURRENT = "overview";
+let LAST_OK = 0;
+let INFLIGHT = false;
+let AUTO = true;
+
+async function refresh(force){
+  const fn = LOADERS[CURRENT];
+  if (!fn || INFLIGHT || !TOKEN) return;
+  if (!force && !AUTO) return;
+  INFLIGHT = true;
+  try { await fn(); LAST_OK = Date.now(); markFresh(""); }
+  catch(e){ markFresh(e.message || "failed"); }
+  finally { INFLIGHT = false; }
+}
+
+function markFresh(err){
+  const el = $("#fresh");
+  if (!el) return;
+  if (err){ el.textContent = "⚠ " + err; el.style.color = "#D64545"; return; }
+  const s = Math.round((Date.now() - LAST_OK)/1000);
+  el.style.color = "";
+  el.textContent = (AUTO ? "live · " : "paused · ") +
+    (s < 5 ? "just now" : s < 60 ? s + "s ago" : Math.round(s/60) + "m ago");
+}
+$("#refreshNow").onclick = function(){ refresh(true); };
+$("#autoToggle").onclick = function(){
+  AUTO = !AUTO;
+  $("#autoToggle").textContent = AUTO ? "Pause" : "Resume";
+  markFresh("");
+  if (AUTO) refresh(true);
+};
+setInterval(function(){ markFresh(""); }, 1000);
+setInterval(function(){ if (!document.hidden) refresh(false); }, 20000);
+document.addEventListener("visibilitychange", function(){
+  if (!document.hidden) refresh(false);
+});
+
+$$("#nav button").forEach(function(b){
+  b.onclick = function(){
+    $$("#nav button").forEach(function(x){x.classList.remove("on")});
+    b.classList.add("on");
+    $$(".view").forEach(function(v){v.classList.add("hide")});
+    $("#v-"+b.dataset.view).classList.remove("hide");
+    CURRENT = b.dataset.view;
+    refresh(true);
+  };
+});
+
+async function boot(){
+  try{ await api("/api/stats"); }
+  catch(e){ $("#loginErr").textContent = e.message; showSection("login"); return; }
+  showSection(null);
+  $("#nav").classList.remove("hide");
+  $("#v-overview").classList.remove("hide");
+  CURRENT = "overview";
+  refresh(true);
+}
+
+async function loadOverview(){
+  const s = await api("/api/stats");
+  const r7 = s.last7d || {};
+  const rate = r7.n ? Math.round(r7.ok_n / r7.n * 100) : 100;
+  $("#kpis").innerHTML = [
+    kpi(num(s.users), "Users"),
+    kpi(num(r7.n), "Guides, 7 days", (r7.ok_n||0) + " succeeded"),
+    kpi(rate + "%", "Success rate", rate < 90 ? "⚠ below 90%" : "healthy"),
+    kpi(money(r7.spend), "Spend, 7 days", "avg " + money(r7.avg_cost) + "/guide"),
+    kpi(money(s.last30d ? s.last30d.spend : 0), "Spend, 30 days"),
+    kpi(Math.round((r7.avg_ms||0)/1000) + "s", "Avg generation"),
+    kpi(num(s.queue_depth), "In queue", s.queue_depth > 5 ? "⚠ backing up" : "clear")
+  ].join("");
+
+  $("#recent").innerHTML = (s.recent_runs||[]).map(function(r){
+    return "<tr><td>"+ago(r.created_at)+"</td><td>"+esc(String(r.trip_id||"").slice(0,8))+"</td>"+
+      "<td>"+(r.ok?'<span class="pill on">ok</span>':'<span class="pill bad">fail</span>')+"</td>"+
+      '<td class="num">'+Math.round((r.ms||0)/1000)+"s</td>"+
+      '<td class="num">'+num(r.stage2_output_tokens)+"</td>"+
+      '<td class="num">'+money(r.cost_usd)+"</td>"+
+      "<td>v"+(r.stage2_prompt_version==null?"—":r.stage2_prompt_version)+"</td>"+
+      '<td class="muted">'+esc(String(r.error||"").slice(0,44))+"</td></tr>";
+  }).join("") || '<tr><td colspan="8" class="muted">No runs yet.</td></tr>';
+
+  const daily = await api("/api/daily");
+  const max = Math.max.apply(null, daily.map(function(d){return Number(d.spend_usd)||0}).concat([0.01]));
+  $("#spark").innerHTML = daily.map(function(d){
+    return '<div style="height:'+Math.max(2,(Number(d.spend_usd)/max*100))+'%" title="'+
+      d.day+": "+money(d.spend_usd)+'"></div>';
+  }).join("");
+  if(daily.length){
+    $("#sparkFrom").textContent = daily[0].day;
+    $("#sparkTo").textContent = daily[daily.length-1].day;
+  }
+}
+
+async function loadCosts(){
+  const d = await api("/api/costs");
+  const m = d.money || {};
+  const cost30 = Number(m.cost_30d||0), perDay = cost30/30;
+
+  $("#costKpis").innerHTML = [
+    kpi(money(m.cost_all_time), "Recorded spend, all time", "every stage, every vendor"),
+    kpi(money(cost30), "Last 30 days", "≈ " + money(perDay*30) + "/month at this rate"),
+    kpi(money(Number(m.guides)? Number(m.cost_guides)/Number(m.guides) : 0),
+        "Average per guide", num(m.guides) + " guides · " + num(m.generations) + " generations"),
+    kpi(money(m.cost_assistant), "The assistant", num(m.assistant_calls) + " model calls")
+  ].join("");
+
+  // ---- WHAT THIS NUMBER IS NOT --------------------------------------
+  //
+  // The console can only ever report what the APP wrote down. Anything that
+  // called a vendor without going through the pipeline is invisible here, and
+  // saying so is the difference between a dashboard and a guess. Reported as a
+  // COUNT of unaccounted work rather than a reassurance, because the gap is the
+  // honest measure of how far this is from the card statement.
+  const jobsAll = Number(m.assistant_jobs_all_time||0);
+  const jobsPriced = Number(m.assistant_calls||0);
+  const blind = Math.max(0, jobsAll - jobsPriced);
+  $("#reconcile").innerHTML =
+    '<div class="card"><h3>Reconciling with your vendor bill</h3>' +
+    '<p class="muted" style="margin-top:-4px">Everything above is what the pipeline ' +
+    'RECORDED. A vendor invoice will be higher, and these are the reasons — none of ' +
+    'them are guesses.</p><table><tbody>' +
+    '<tr><td>Assistant conversations with no cost row</td><td class="num">' +
+      (blind ? '<b style="color:#D64545">' + num(blind) + '</b>' : "0") +
+      '</td><td class="muted">Every assistant call before 2026-08-04 went unrecorded. ' +
+      'New ones are priced.</td></tr>' +
+    '<tr><td>Guides with no Stage 1 recorded</td><td class="num">' +
+      (Number(m.unmeasured) ? '<b style="color:#E8A33D">' + num(m.unmeasured) + "</b>" : "0") +
+      '</td><td class="muted">Gemini was never recorded before 2026-08-04, so those ' +
+      'guides show planning as $0.</td></tr>' +
+    '<tr><td>Local test runs</td><td class="num muted">not tracked</td>' +
+      '<td class="muted">Anything run from <code>worker/scripts</code> calls the vendors ' +
+      'directly and writes no row here.</td></tr>' +
+    '<tr><td>Other tools on the same API key</td><td class="num muted">not visible</td>' +
+      '<td class="muted">Only this app writes to these tables. If a key is shared with ' +
+      'anything else, that spend appears on the invoice and never here — check the ' +
+      'vendor console split by key.</td></tr>' +
+    "</tbody></table></div>";
+
+  // A GUIDE WITH NO STAGE-1 FIGURES IS UNMEASURED, NOT CHEAP. Averaging it in
+  // silently would report a number that is a floor and call it a mean, so the
+  // console says so instead.
+  const un = Number(m.unmeasured||0);
+  $("#costWarn").innerHTML = un ? '<div class="card" style="border-left:4px solid #E8A33D">'+
+    "<b>"+num(un)+" run"+(un===1?" is":"s are")+" missing Stage 1.</b> "+
+    "Gemini was never recorded before migration 0100, so those guides show planning as $0 "+
+    "and every average over them is a floor rather than a true mean. Guides built from now on "+
+    "carry the whole bill.</div>" : "";
+
+  const eco = d.economics||[];
+  $("#econ").innerHTML = eco.map(function(e){
+    const mg = e.margin_at_pro_annual;
+    const mgTxt = (mg===null||mg===undefined) ? '<span class="muted">n/a</span>'
+      : '<b style="color:'+(Number(mg)<0?"#D64545":"#2E9E63")+'">'+money(mg)+"</b>";
+    return "<tr><td>"+esc(e.agent||"—")+"</td><td>"+esc(e.band||"—")+
+      '</td><td class="num">'+num(e.guides)+
+      '</td><td class="num">'+money(e.avg_stage1)+'</td><td class="num">'+money(e.avg_stage2)+
+      '</td><td class="num">'+money(e.avg_api)+'</td><td class="num"><b>'+money(e.avg_usd)+
+      '</b></td><td class="num muted">'+money(e.min_usd)+"–"+money(e.max_usd)+
+      '</td><td class="num">'+(e.charged_guides ? num(e.avg_credits) : '<span class="muted">—</span>')+
+      '</td><td class="num">'+mgTxt+"</td></tr>";
+  }).join("") || '<tr><td colspan="10" class="muted">No delivered guides yet.</td></tr>';
+
+  // Where the money goes, as shares. Totals from the model table so the split
+  // and the per-model table can never disagree.
+  var s1=0, s2=0;
+  (d.models||[]).forEach(function(x){
+    if (Number(x.stage)===1) s1 += Number(x.spend_usd||0); else s2 += Number(x.spend_usd||0);
+  });
+  var api_ = (d.daily||[]).reduce(function(s,x){return s+Number(x.api_usd||0)},0);
+  const tot = s1+s2+api_ || 1;
+  const parts = [["Stage 1 — planning (Gemini)",s1],["Stage 2 — writing (Claude)",s2],["Google APIs",api_]];
+  $("#split").innerHTML = parts.map(function(p){
+    return '<div style="margin:10px 0"><div class="row"><span style="flex:1">'+p[0]+
+      "</span><b>"+money(p[1])+'</b><span class="muted" style="margin-left:8px">'+
+      (p[1]/tot*100).toFixed(1)+'%</span></div><div class="bar"><i style="width:'+
+      (p[1]/tot*100)+'%"></i></div></div>';
+  }).join("") + (api_===0 ? '<p class="muted">Google is $0 because it sits inside the free '+
+    'tier — not because it was not counted. The table below shows how close it is.</p>' : "");
+
+  $("#google").innerHTML = (d.google||[]).map(function(g){
+    const pct = Number(g.pct_of_free||0);
+    return "<tr><td>"+esc(g.month)+"</td><td>"+esc(g.sku)+'</td><td class="num">'+num(g.calls)+
+      '</td><td class="num muted">'+num(g.free_per_month)+'</td><td class="num">'+num(g.billable_calls)+
+      '</td><td class="num"><b>'+money(g.usd)+'</b></td><td class="num">'+
+      '<b style="color:'+(pct>80?"#D64545":pct>50?"#E8A33D":"inherit")+'">'+pct+
+      '%</b><div class="bar"><i style="width:'+Math.min(100,pct)+'%"></i></div></td></tr>';
+  }).join("") || '<tr><td colspan="7" class="muted">Nothing recorded yet — guides built '+
+    'before migration 0100 did not count their Google calls.</td></tr>';
+
+  $("#worst").innerHTML = (d.worst||[]).map(function(w){
+    const places = (w.api_calls && w.api_calls.places) || 0;
+    return "<tr><td>"+esc(String(w.destination||w.trip_id||"").slice(0,34))+
+      "</td><td>"+esc(w.agent||"—")+" / "+esc(w.band||"—")+'</td><td class="num">'+num(w.days)+
+      '</td><td class="num">'+money(w.stage1_usd)+'</td><td class="num">'+money(w.stage2_usd)+
+      '</td><td class="num">'+money(w.api_usd)+'</td><td class="num">'+num(places)+
+      '</td><td class="num"><b>'+money(w.total_usd)+'</b></td><td class="num">'+
+      (w.quality_score===null||w.quality_score===undefined ? "—" : num(w.quality_score))+"</td></tr>";
+  }).join("") || '<tr><td colspan="9" class="muted">No data yet.</td></tr>';
+
+  const failed = Number(m.guides_failed||0), retries = Number(m.retries||0);
+  const fr = d.free_rebuilds || {trips:0,runs:0,usd:0};
+  const allTime = Number(m.cost_all_time||0);
+  $("#wasteKpis").innerHTML = [
+    kpi(num(failed), "Failed runs", failed ? "credits were returned" : "none"),
+    kpi(num(retries), "Retried attempts", "billed, delivered nothing"),
+    kpi(money(fr.usd), "Given away free",
+        num(fr.runs)+" run"+(fr.runs===1?"":"s")+" on "+num(fr.trips)+" trip"+(fr.trips===1?"":"s")+
+        (allTime ? " — "+(fr.usd/allTime*100).toFixed(0)+"% of all spend" : "")),
+    kpi(num((d.capped||[]).length), "Guides missing map pins", "hit the Places cap")
+  ].join("");
+
+  // A HARD QUALITY FLAG MAKES THE NEXT REBUILD FREE, so a check that is WRONG
+  // does not merely mislead — it hands out the product. Worth stating in full,
+  // because the number is large and the cause is fixable.
+  $("#wasteKpis").insertAdjacentHTML("afterend", fr.usd
+    ? '<p class="muted">Free rebuilds are <code>credit_quote</code> pricing a '+
+      'rebuild at zero when the last guide carried a <b>hard</b> quality flag. '+
+      'Two of those checks were proven wrong on 2026-08-04 — a day trip flagged '+
+      'for packing no toothbrush, and a correct airport pickup read as a missed '+
+      'booking — so some of this was given away for guides with nothing wrong '+
+      'with them. Both are fixed; watch this number stop growing.</p>'
+    : "");
+
+  $("#cappedWrap").innerHTML = (d.capped||[]).length
+    ? '<table style="margin-top:10px"><thead><tr><th>Trip</th><th class="num">Looked up</th>'+
+      '<th class="num">Never looked up</th></tr></thead><tbody>'+
+      d.capped.map(function(c){
+        return "<tr><td>"+esc(String(c.destination||c.id).slice(0,40))+'</td><td class="num">'+
+          num(c.calls)+'</td><td class="num"><b style="color:#D64545">'+num(c.capped)+"</b></td></tr>";
+      }).join("")+'</tbody></table><p class="muted">These guides shipped with places nobody '+
+      'looked up — a map with holes in it. Raise PLACES_MAX_LOOKUPS if this keeps appearing.</p>'
+    : "";
+
+  $("#daily").innerHTML = (d.daily||[]).slice().reverse().map(function(x){
+    return "<tr><td>"+x.day+'</td><td class="num">'+num(x.runs)+'</td><td class="num">'+num(x.ok_runs)+
+      '</td><td class="num">'+(Number(x.failed_runs)?'<b style="color:#D64545">'+num(x.failed_runs)+"</b>":"0")+
+      '</td><td class="num">'+num(x.active_users)+'</td><td class="num">'+Math.round((x.avg_ms||0)/1000)+
+      's</td><td class="num">'+money(x.stage1_usd)+'</td><td class="num">'+money(x.stage2_usd)+
+      '</td><td class="num">'+money(x.api_usd)+'</td><td class="num"><b>'+money(x.spend_usd)+"</b></td></tr>";
+  }).join("") || '<tr><td colspan="10" class="muted">No data yet.</td></tr>';
+
+  const mTotal = (d.models||[]).reduce(function(s,x){return s+Number(x.spend_usd||0)},0) || 1;
+  $("#models").innerHTML = (d.models||[]).slice().sort(function(a,b){
+    return Number(b.spend_usd||0)-Number(a.spend_usd||0);
+  }).map(function(x){
+    return "<tr><td>"+esc(x.model)+'</td><td class="num">'+num(x.stage)+'</td><td class="num">'+
+      num(x.runs)+'</td><td class="num">'+num(x.in_tokens)+'</td><td class="num">'+num(x.out_tokens)+
+      '</td><td class="num">'+money(x.avg_cost)+'</td><td class="num"><b>'+money(x.spend_usd)+
+      '</b><div class="bar"><i style="width:'+(Number(x.spend_usd)/mTotal*100)+'%"></i></div></td></tr>';
+  }).join("") || '<tr><td colspan="7" class="muted">No data yet.</td></tr>';
+
+  $("#apiPricing").innerHTML = (d.api_pricing||[]).map(function(p){
+    return "<tr><td><b>"+esc(p.sku)+'</b></td><td class="num"><input data-sku="'+esc(p.sku)+
+      '" data-f="usd_per_call" value="'+esc(String(p.usd_per_call))+'" style="width:90px;text-align:right">'+
+      '</td><td class="num"><input data-sku="'+esc(p.sku)+'" data-f="free_per_month" value="'+
+      esc(String(p.free_per_month))+'" style="width:90px;text-align:right"></td><td class="muted">'+
+      esc(p.note||"")+'</td><td><button data-save-sku="'+esc(p.sku)+'">Save</button></td></tr>';
+  }).join("") || '<tr><td colspan="5" class="muted">No rates.</td></tr>';
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-save-sku]"), function(b){
+    b.onclick = async function(){
+      const sku = b.getAttribute("data-save-sku");
+      const get = function(f){
+        const el = document.querySelector('[data-sku="'+sku+'"][data-f="'+f+'"]');
+        return el ? el.value : "0";
+      };
+      try {
+        await api("/api/api-pricing", { method:"POST", body: JSON.stringify({
+          sku: sku, usd_per_call: Number(get("usd_per_call")),
+          free_per_month: Number(get("free_per_month"))
+        })});
+        toast("Saved — applies to every stored run");
+        loadCosts();
+      } catch(e){ toast(e.message, true); }
+    };
+  });
+}
+
+async function loadUsers(){ USERS = await api("/api/users"); renderUsers(); }
+$("#userSearch").oninput = renderUsers;
+function renderUsers(){
+  const q = $("#userSearch").value.trim().toLowerCase();
+  const rows = USERS.filter(function(u){
+    return !q || (u.display_name||"").toLowerCase().indexOf(q)>=0 || String(u.user_id||"").indexOf(q)>=0;
+  });
+  $("#users").innerHTML = rows.map(function(u){
+    const btn = u.is_admin
+      ? '<button class="btn ghost tiny" data-flag="0" data-uid="'+esc(u.user_id)+'">revoke</button>'
+      : '<button class="btn ghost tiny" data-flag="1" data-uid="'+esc(u.user_id)+'">make admin</button>';
+    // usd_per_credit is NULL, not zero, for a user who was never charged — a
+    // free-credits account has no revenue to divide by, and showing 0 would
+    // read as "makes no money" rather than "not applicable".
+    const upc = (u.usd_per_credit===null||u.usd_per_credit===undefined)
+      ? '<span class="muted">—</span>'
+      // Above ~$0.0208 a credit costs more than the deepest discount sells it
+      // for. That is the number that says the PRICE TABLE needs re-setting.
+      : '<b style="color:'+(Number(u.usd_per_credit)>0.0208?"#D64545":"#2E9E63")+'">$'+
+        Number(u.usd_per_credit).toFixed(4)+"</b>";
+    // GUIDES and BUILDS are different questions and the old table answered the
+    // second while calling it the first: a rebuild is a run, so an account with
+    // 12 trips carrying guides reported 19. Both are shown, named for what they
+    // are, and a rebuild count above the guide count is normal rather than a
+    // fault — it is how much work those guides took.
+    return "<tr><td><b>"+esc(u.display_name)+'</b><br><span class="muted">'+
+      esc(String(u.user_id).slice(0,8))+'</span></td><td class="num">'+num(u.trips)+
+      '</td><td class="num"><b>'+num(u.guides)+'</b></td><td class="num muted">'+
+      num(u.generations)+'</td><td class="num">'+
+      (Number(u.guides_failed)?'<span class="pill bad">'+u.guides_failed+"</span>":"0")+
+      '</td><td class="num">'+num(u.assistant_calls)+
+      '</td><td class="num">'+num(u.credits_spent)+'</td><td class="num">'+upc+
+      '</td><td class="num">'+money(u.spend_30d)+
+      '</td><td class="num"><b>'+money(u.spend_usd)+"</b></td><td>"+ago(u.last_activity)+
+      "</td><td>"+btn+"</td></tr>";
+  }).join("") || '<tr><td colspan="12" class="muted">No users yet.</td></tr>';
+}
+
+document.addEventListener("click", async function(ev){
+  const t = ev.target;
+  if (t.dataset && t.dataset.flag !== undefined){
+    const on = t.dataset.flag === "1";
+    if(!confirm(on ? "Grant admin access?" : "Revoke admin access?")) return;
+    try{
+      await api("/api/user-flag",{method:"POST",
+        body: JSON.stringify({user_id:t.dataset.uid, is_admin:on})});
+      toast(on?"Granted":"Revoked"); loadUsers();
+    }catch(e){ toast(e.message,true); }
+  }
+  if (t.dataset && t.dataset.requeue){
+    if(!confirm("Requeue this guide?")) return;
+    try{
+      await api("/api/requeue",{method:"POST",body:JSON.stringify({trip_id:t.dataset.requeue})});
+      toast("Requeued"); loadOps();
+    }catch(e){ toast(e.message,true); }
+  }
+  // Credits. Every one of these buttons is written by innerHTML, so it has to be
+  // handled here — a repaint throws away any listener bound to the node itself.
+  if (t.dataset && t.dataset.credledger){
+    loadLedger(t.dataset.credledger);
+    $("#credLedger").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+  if (t.dataset && t.dataset.credgrant){
+    $("#grantUser").value = t.dataset.credgrant;
+    $("#grantWho").textContent = t.dataset.credwho || "";
+    // A different person is a different decision, so the old token must not
+    // carry over — reusing it would make the second grant a silent no-op.
+    GRANT_TOKEN = "";
+    $("#grantAmount").scrollIntoView({behavior:"smooth", block:"center"});
+    $("#grantAmount").focus();
+  }
+  if (t.dataset && t.dataset.credrelease){
+    if(!confirm("Return these credits to the traveller? This does NOT rebuild the guide — use Operations for that.")) return;
+    try{
+      await api("/api/credit-release",{method:"POST",
+        body: JSON.stringify({key:t.dataset.credrelease})});
+      toast("Credits returned"); loadCredits();
+    }catch(e){ toast(e.message,true); }
+  }
+  if (t.dataset && t.dataset.credrevoke){
+    if(!confirm("Take this grant back? It only works while the credits are completely unspent — if any have been used, grant a correction instead.")) return;
+    try{
+      await api("/api/credit-revoke",{method:"POST",
+        body: JSON.stringify({source_ref:t.dataset.credrevoke})});
+      toast("Grant taken back");
+      CREDIT_UID = t.dataset.creduid || CREDIT_UID;
+      loadCredits();
+    }catch(e){ toast(e.message,true); }
+  }
+  if (t.dataset && t.dataset.price){
+    const model = t.dataset.price;
+    try{
+      await api("/api/pricing",{method:"POST",body:JSON.stringify({
+        model: model,
+        input_per_mtok: document.getElementById("in::"+model).value,
+        output_per_mtok: document.getElementById("out::"+model).value
+      })});
+      toast("Saved — new runs use this rate");
+    }catch(e){ toast(e.message,true); }
+  }
+});
+
+// A score's colour, so the table reads without doing arithmetic in your head.
+function scorePill(n){
+  if(n==null) return '<span class="muted">—</span>';
+  const cls = n>=90 ? "on" : (n>=75 ? "warn" : "bad");
+  return '<span class="pill '+cls+'">'+n+"</span>";
+}
+
+async function loadQuality(){
+  const results = await Promise.all([api("/api/guide-quality"), api("/api/feedback")]);
+  const q = results[0], fb = results[1];
+  const k = q.kpis || {};
+
+  $("#qualKpis").innerHTML = [
+    kpi(k.avg_score==null?"—":k.avg_score, "Average guide score", "out of 100, last 30 days"),
+    kpi(k.clean_pct==null?"—":(k.clean_pct+"%"), "Guides with no serious fault", "the number to watch"),
+    kpi(num(k.guides_scored), "Guides checked", "since the checks shipped"),
+    kpi(fb.avg_rating || "—", "Average user rating", fb.count + " ratings")
+  ].join("");
+
+  // Trend — oldest on the left, so it reads like a chart rather than a log.
+  const trend = (q.trend||[]).slice().reverse();
+  $("#qTrend").innerHTML = trend.length ? trend.map(function(d){
+    return '<div class="row" style="margin-bottom:6px">'+
+      '<span class="muted" style="min-width:92px">'+esc(String(d.day))+"</span>"+
+      '<div class="bar" style="flex:1"><i style="width:'+(Number(d.avg_score)||0)+'%"></i></div>'+
+      '<span style="min-width:56px;text-align:right">'+scorePill(d.avg_score)+"</span>"+
+      '<span class="muted" style="min-width:70px;text-align:right">'+num(d.guides)+" guides</span></div>";
+  }).join("") : '<p class="muted">No guides scored yet — the score appears on the next guide built.</p>';
+
+  $("#qVersions").innerHTML = (q.versions||[]).map(function(r){
+    return "<tr><td><b>"+esc(r.pipeline_version)+'</b></td><td class="num">'+num(r.guides)+
+      '</td><td class="num">'+scorePill(r.avg_score)+'</td><td class="num">'+
+      (r.worst_score==null?"—":r.worst_score)+'</td><td class="num">'+
+      (r.hard_fail_pct==null?"—":(r.hard_fail_pct+"%"))+'</td><td class="num">'+money(r.avg_cost)+
+      '</td><td class="num">'+(r.avg_seconds==null?"—":r.avg_seconds)+"s</td></tr>";
+  }).join("") || '<tr><td colspan="7" class="muted">No scored guides yet.</td></tr>';
+
+  $("#qFlags").innerHTML = (q.flags||[]).map(function(f){
+    const hard = f.severity==="hard";
+    return "<tr><td><code>"+esc(f.check_id)+'</code></td><td><span class="pill '+
+      (hard?"bad":"warn")+'">'+esc(f.severity)+"</span></td>"+
+      '<td class="num">'+num(f.trips)+"</td>"+
+      '<td class="muted">'+esc(String(f.sample||"").slice(0,80))+"</td><td>"+ago(f.last_seen)+"</td></tr>";
+  }).join("") || '<tr><td colspan="5" class="muted">Nothing has failed a check yet.</td></tr>';
+
+  const tally = Object.keys(fb.liked_tally||{}).map(function(k){return [k, fb.liked_tally[k]]})
+    .sort(function(a,b){return b[1]-a[1]});
+  const top = tally.length ? tally[0][1] : 1;
+  $("#likedTally").innerHTML = tally.length ? tally.map(function(p){
+    return '<div class="row" style="margin-bottom:7px"><span style="min-width:150px">'+esc(p[0])+
+      '</span><div class="bar" style="flex:1"><i style="width:'+(p[1]/top*100)+
+      '%"></i></div><span class="muted">'+p[1]+"</span></div>";
+  }).join("") : '<p class="muted">No feedback yet.</p>';
+
+  $("#feedback").innerHTML = (fb.recent||[]).map(function(f){
+    return "<tr><td>"+ago(f.created_at)+'</td><td class="num">'+
+      "★".repeat(f.rating||0)+"</td><td>"+esc((f.liked||[]).join(", "))+
+      '</td><td class="muted">'+esc(f.issue||"—")+"</td></tr>";
+  }).join("") || '<tr><td colspan="4" class="muted">No feedback yet.</td></tr>';
+}
+
+async function loadOps(){
+  const results = await Promise.all([api("/api/jobs"), api("/api/errors")]);
+  const jobs = results[0], errs = results[1];
+  $("#jobs").innerHTML = jobs.map(function(j){
+    const cls = j.status==="done"?"on":(j.status==="failed"?"bad":"warn");
+    return "<tr><td>"+esc(String(j.trip_id).slice(0,8))+'</td><td><span class="pill '+cls+'">'+
+      j.status+'</span></td><td class="num">'+j.attempts+"</td><td>"+
+      esc(String(j.claimed_by||"—").slice(0,14))+"</td><td>"+ago(j.updated_at)+
+      '</td><td class="muted">'+esc(String(j.error||"").slice(0,36))+
+      '</td><td><button class="btn ghost tiny" data-requeue="'+esc(j.trip_id)+'">requeue</button></td></tr>';
+  }).join("") || '<tr><td colspan="7" class="muted">Queue is empty.</td></tr>';
+
+  const groups = errs.groups || {};
+  const g = Object.keys(groups).map(function(k){return [k, groups[k]]})
+    .sort(function(a,b){return b[1].n-a[1].n});
+  $("#errGroups").innerHTML = g.map(function(p){
+    return '<tr><td class="num"><b>'+p[1].n+"</b></td><td>"+esc(p[0])+"</td></tr>";
+  }).join("") || '<tr><td colspan="2" class="muted">No failures. 🎉</td></tr>';
+}
+
+async function loadPricing(){
+  const rows = await api("/api/pricing");
+  $("#pricing").innerHTML = rows.map(function(p){
+    return "<tr><td>"+esc(p.model)+'</td><td class="num">'+
+      '<input style="width:110px;text-align:right" id="in::'+esc(p.model)+'" value="'+p.input_per_mtok+'">'+
+      '</td><td class="num"><input style="width:110px;text-align:right" id="out::'+esc(p.model)+
+      '" value="'+p.output_per_mtok+'"></td>'+
+      '<td><button class="btn ghost tiny" data-price="'+esc(p.model)+'">Save</button></td></tr>';
+  }).join("");
+}
+
+async function loadLearning(){
+  const results = await Promise.all([api("/api/edits"), api("/api/complaints")]);
+  const e = results[0], c = results[1];
+
+  const tops = (c.topics||[]);
+  const topMax = tops.length ? tops[0].n : 1;
+  $("#complaintTopics").innerHTML = tops.length ? tops.map(function(r){
+    return '<div class="row" style="margin-bottom:7px"><span style="min-width:130px">'+esc(r.topic)+
+      '</span><div class="bar" style="flex:1"><i style="width:'+(r.n/topMax*100)+
+      '%"></i></div><span class="muted">'+r.n+"</span></div>";
+  }).join("") : '<p class="muted">No complaints yet. This fills up as people push back on a guide.</p>';
+
+  $("#complaints").innerHTML = (c.recent||[]).map(function(r){
+    const sure = r.confidence==="high"
+      ? '<span class="pill bad">likely</span>'
+      : '<span class="pill warn">maybe</span>';
+    return "<tr><td>"+ago(r.created_at)+"</td><td>"+esc(String(r.request||"").slice(0,130))+
+      '</td><td class="muted">'+esc(r.topic)+"</td><td>"+sure+"</td></tr>";
+  }).join("") || '<tr><td colspan="4" class="muted">Nothing flagged yet.</td></tr>';
+
+  const total = (e.corrections||0) + (e.additions||0);
+  $("#learnKpis").innerHTML = [
+    kpi(num(total), "Edit requests", "everything people asked the assistant to change"),
+    kpi(num(e.corrections), "Corrections", "things the guide got wrong"),
+    kpi(num(e.additions), "Additions", "things we couldn't have known"),
+    kpi(num(c.high), "Likely complaints", "explicit “that’s wrong” messages")
+  ].join("");
+
+  const secs = e.sections||[];
+  const top = secs.length ? secs[0].total : 1;
+  $("#editSections").innerHTML = secs.length ? secs.map(function(r){
+    const cw = r.corrections/top*100, aw = r.additions/top*100;
+    return '<div class="row" style="margin-bottom:8px">'+
+      '<span style="min-width:110px">'+esc(r.section)+"</span>"+
+      '<div class="bar" style="flex:1;display:flex"><i style="width:'+cw+'%"></i>'+
+      '<i style="width:'+aw+'%;opacity:.35"></i></div>'+
+      '<span class="muted" style="min-width:120px;text-align:right">'+
+      num(r.corrections)+" wrong · "+num(r.additions)+" new</span></div>";
+  }).join("") : '<p class="muted">No assistant edits yet. This fills up as people use the in-guide planner.</p>';
+
+  $("#editRecent").innerHTML = (e.recent||[]).map(function(r){
+    const kind = r.intent==="correction" ? '<span class="pill bad">correction</span>'
+      : (r.intent==="addition" ? '<span class="pill on">addition</span>'
+      : '<span class="pill warn">'+esc(r.intent||"—")+"</span>");
+    return "<tr><td>"+ago(r.created_at)+"</td><td>"+esc(String(r.request||"").slice(0,110))+
+      '</td><td class="muted">'+esc(r.section||"—")+"</td><td>"+kind+"</td></tr>";
+  }).join("") || '<tr><td colspan="4" class="muted">No requests yet.</td></tr>';
+}
+
+// ---------------------------------------------------------------------------
+// Credits.
+//
+// Two jobs in one tab: the calibration numbers the billing plan says to watch,
+// and the support desk — grant, correct a mistake, read a ledger, unstick a
+// hold. The support half is what gets used daily, so it sits at the top.
+// ---------------------------------------------------------------------------
+let CREDITS = null;      // the economy-wide payload
+let CREDIT_USERS = [];   // the searchable per-user rows
+let CREDIT_UID = "";     // whose ledger is open, so a grant can refresh it
+let GRANT_TOKEN = "";    // idempotency for ONE press of Grant
+
+// One token per grant DECISION: minted on the first press, REUSED if that press
+// fails, and thrown away once the grant lands. That is what makes a retry safe
+// after a request times out having already succeeded — the second attempt comes
+// back as the same lot instead of doubling somebody's balance. Two deliberate
+// grants of 50 are two tokens and two lots, which is the room credit_lots'
+// PARTIAL unique index was left for.
+// Deliberately not crypto.randomUUID(): the console is opened as a local file
+// and a secure context isn't guaranteed there, and this only has to be unique
+// among one admin's own clicks.
+function grantToken(){
+  if(!GRANT_TOKEN){
+    GRANT_TOKEN = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,10);
+  }
+  return GRANT_TOKEN;
+}
+
+// Expiry is in the FUTURE, and ago() would render it as "-320d ago".
+function until(d){
+  if(!d) return "never";
+  const s = (new Date(d) - Date.now())/1000;
+  if(s <= 0) return "expired";
+  if(s < 86400) return "in " + Math.round(s/3600) + "h";
+  return "in " + Math.round(s/86400) + "d";
+}
+// Four decimals, because the whole calibration lives in the third and fourth.
+const per = (n) => n==null ? "—" : ("$" + Number(n).toFixed(4));
+const stateP = (s) => s==="settled" ? '<span class="pill on">spent</span>'
+  : (s==="held" ? '<span class="pill warn">held</span>' : '<span class="pill off">void</span>');
+
+async function loadCredits(){
+  let results;
+  try{ results = await Promise.all([api("/api/credits"), api("/api/credit-users")]); }
+  catch(e){
+    // The overwhelmingly likely failure on this tab is that migration 0078 has
+    // not been run yet, and every other tab would show a blank panel and leave
+    // you guessing. Say the real thing, and name the next step.
+    $("#credKpis").innerHTML = '<p class="err" style="grid-column:1/-1">'+esc(e.message)+
+      " — if that names a missing table or function, migration 0078 has not been run yet.</p>";
+    return;
+  }
+  CREDITS = results[0];
+  CREDIT_USERS = results[1].users || [];
+  const k = CREDITS.kpis || {};
+
+  $("#credKpis").innerHTML = [
+    kpi(num(k.outstanding), "Credits outstanding", "granted, not yet spent or lapsed"),
+    kpi(num(k.spent_30d), "Credits spent, 30 days", "settled charges only"),
+    kpi(num(k.free_guides), "Guides given free", "0-credit charges, all time"),
+    kpi(per(k.usd_per_credit), "Measured $ per credit", "30 days · keep under $0.02"),
+    kpi(num(k.pro), "Pro subscribers", "active or in grace")
+  ].join("");
+
+  $("#credPartial").textContent = results[1].emails_partial
+    ? "Showing the first 1,000 accounts — emails past that come back blank." : "";
+  renderCreditUsers();
+
+  $("#credStuck").innerHTML = (CREDITS.stuck||[]).map(function(c){
+    return "<tr><td>"+ago(c.created_at)+"</td><td>"+esc(String(c.trip_id||"—").slice(0,8))+
+      "</td><td>"+esc(String(c.user_id||"").slice(0,8))+'</td><td class="num"><b>'+num(c.amount)+
+      "</b></td><td>"+esc(c.reason||"guide")+
+      '</td><td><button class="btn ghost tiny" data-credrelease="'+esc(c.idempotency_key)+
+      '">release</button></td></tr>';
+  }).join("") || '<tr><td colspan="6" class="muted">Nothing stuck. 🎉</td></tr>';
+
+  $("#credDaily").innerHTML = (CREDITS.days||[]).map(function(d){
+    return "<tr><td>"+esc(String(d.day))+'</td><td class="num">'+num(d.guides)+
+      '</td><td class="num">'+num(d.credits_spent)+'</td><td class="num">'+money(d.cost_usd)+
+      '</td><td class="num"><b>'+per(d.usd_per_credit)+'</b></td><td class="num">'+
+      num(d.free_guides)+'</td><td class="num">'+
+      (Number(d.released)?'<span class="pill warn">'+num(d.released)+"</span>":"0")+
+      '</td><td class="num">'+num(d.users)+"</td></tr>";
+  }).join("") || '<tr><td colspan="8" class="muted">No credit charges yet.</td></tr>';
+
+  $("#credKinds").innerHTML = (CREDITS.kinds||[]).map(function(r){
+    return "<tr><td><b>"+esc(r.kind)+'</b></td><td class="num">'+num(r.lots)+
+      '</td><td class="num">'+num(r.granted)+'</td><td class="num">'+num(r.consumed)+
+      '</td><td class="num">'+
+      (Number(r.lapsed)?'<span class="pill warn">'+num(r.lapsed)+"</span>":"0")+
+      "</td><td>"+ago(r.last_grant)+"</td></tr>";
+  }).join("") ||
+    '<tr><td colspan="6" class="muted">No credits granted yet — has migration 0078 been run?</td></tr>';
+
+  $("#credProducts").innerHTML = (CREDITS.products||[]).map(function(p){
+    const each = Number(p.credits) ? Number(p.price_usd)/Number(p.credits) : null;
+    return "<tr><td><b>"+esc(p.key)+"</b></td><td>"+esc(p.kind)+
+      (p.period?' <span class="muted">/'+esc(p.period)+"</span>":"")+
+      '</td><td class="num">'+num(p.credits)+'</td><td class="num">$'+
+      Number(p.price_usd||0).toFixed(2)+'</td><td class="num">'+per(each)+
+      '</td><td class="muted">'+esc(p.store_id||"—")+'</td><td class="num">'+
+      (p.rollover_cap==null?"—":num(p.rollover_cap))+"</td><td>"+
+      (p.active?'<span class="pill on">live</span>':'<span class="pill off">off</span>')+
+      "</td></tr>";
+  }).join("") ||
+    '<tr><td colspan="8" class="muted">No products — has migration 0078 been run?</td></tr>';
+
+  if(CREDIT_UID) loadLedger(CREDIT_UID);
+}
+
+$("#credSearch").oninput = renderCreditUsers;
+function renderCreditUsers(){
+  // Email is what a support message arrives carrying, so it is searchable and
+  // shown; a leading @ is stripped so a handle can be pasted as written.
+  const q = $("#credSearch").value.trim().toLowerCase().replace("@","");
+  const rows = CREDIT_USERS.filter(function(u){
+    if(!q) return true;
+    return (u.email||"").toLowerCase().indexOf(q)>=0
+      || (u.handle||"").toLowerCase().indexOf(q)>=0
+      || (u.display_name||"").toLowerCase().indexOf(q)>=0
+      || String(u.user_id||"").indexOf(q)>=0;
+  }).slice(0,80);
+  $("#credUsers").innerHTML = rows.map(function(u){
+    const who = u.email || u.display_name || String(u.user_id);
+    return "<tr><td><b>"+esc(u.display_name||"no name")+"</b>"+
+      (u.handle?' <span class="muted">@'+esc(u.handle)+"</span>":"")+
+      '<br><span class="muted">'+esc(u.email||String(u.user_id).slice(0,8))+"</span></td>"+
+      '<td class="num"><b>'+num(u.available)+"</b></td>"+
+      '<td class="num">'+(Number(u.held)?'<span class="pill warn">'+num(u.held)+"</span>":"0")+"</td>"+
+      '<td class="num">'+num(u.lifetime_granted)+"</td>"+
+      '<td class="num">'+num(u.credits_spent)+"</td>"+
+      '<td class="num">'+num(u.guides)+"</td>"+
+      '<td class="num">'+per(u.usd_per_credit)+"</td>"+
+      "<td>"+(u.pro_status?'<span class="pill on">'+esc(u.pro_status)+"</span>"
+                         :'<span class="muted">—</span>')+"</td>"+
+      '<td><button class="btn ghost tiny" data-credledger="'+esc(u.user_id)+'">ledger</button> '+
+      '<button class="btn ghost tiny" data-credgrant="'+esc(u.user_id)+
+      '" data-credwho="'+esc(who)+'">grant</button></td></tr>';
+  }).join("") || '<tr><td colspan="9" class="muted">Nobody matches.</td></tr>';
+}
+
+// Lots in, charges out. The two tables answer different questions — "where did
+// their credits come from" and "what did they spend them on" — and a support
+// message is nearly always about one or the other.
+async function loadLedger(uid){
+  CREDIT_UID = uid;
+  $("#credLedger").innerHTML = '<p class="muted">Loading…</p>';
+  let d;
+  try{ d = await api("/api/credit-user",{method:"POST",body:JSON.stringify({user_id:uid})}); }
+  catch(e){ $("#credLedger").innerHTML = '<p class="err">'+esc(e.message)+"</p>"; return; }
+  const u = d.user||{}, b = d.balance||{}, sub = d.subscription;
+
+  let out = '<div class="row" style="margin-bottom:12px"><div style="flex:1"><b>'+
+    esc(u.display_name||"no name")+"</b>"+
+    (u.handle?' <span class="muted">@'+esc(u.handle)+"</span>":"")+
+    '<br><span class="muted">'+esc(u.email||"no email")+" · "+esc(String(u.user_id))+
+    "</span></div>"+
+    '<button class="btn ghost tiny" data-credgrant="'+esc(u.user_id)+'" data-credwho="'+
+    esc(u.email||u.display_name||String(u.user_id))+'">grant credits</button></div>';
+
+  out += '<div class="grid">'+[
+    kpi(num(b.available), "Available", "a hold is already subtracted"),
+    kpi(num(b.held), "On hold", "inside a running generation"),
+    kpi(num(b.purchased), "Bought", "never expires"),
+    kpi(num(b.expiring_soon), "Expiring", "in the next 30 days"),
+    kpi(b.pro?"Yes":"No", "Pro",
+      sub ? esc(String(sub.product_key||"—"))+" · "+esc(String(sub.status||"")) : "not subscribed")
+  ].join("")+"</div>";
+
+  out += '<h3 style="font-size:15px;margin:6px 0 8px">Credits in</h3>'+
+    '<div class="scroll"><table><thead><tr><th>When</th><th>Kind</th><th class="num">Amount</th>'+
+    '<th class="num">Left</th><th>Expires</th><th>Why</th><th></th></tr></thead><tbody>'+
+    ((d.lots||[]).map(function(l){
+      // "Take back" only appears on a console grant that is still completely
+      // untouched. Held counts as touched: those credits are funding a
+      // generation right now, and clawing them back would break it.
+      const untouched = Number(l.remaining)===Number(l.amount) &&
+        String(l.note||"").indexOf("[revoked:")<0;
+      const back = (l.kind==="admin" && untouched)
+        ? '<button class="btn ghost tiny" data-credrevoke="'+esc(l.source_ref)+
+          '" data-creduid="'+esc(l.user_id)+'">take back</button>'
+        : "";
+      return "<tr><td>"+ago(l.created_at)+"</td><td><b>"+esc(l.kind)+"</b></td>"+
+        '<td class="num">'+num(l.amount)+'</td><td class="num">'+num(l.remaining)+"</td>"+
+        "<td>"+esc(until(l.expires_at))+'</td><td class="muted">'+
+        esc(String(l.note||"—").slice(0,70))+"</td><td>"+back+"</td></tr>";
+    }).join("") || '<tr><td colspan="7" class="muted">No credits yet.</td></tr>')+
+    "</tbody></table></div>";
+
+  out += '<h3 style="font-size:15px;margin:16px 0 8px">Credits out</h3>'+
+    '<div class="scroll"><table><thead><tr><th>When</th><th>Trip</th><th class="num">Credits</th>'+
+    '<th>State</th><th>Priced from</th><th>Note</th><th></th></tr></thead><tbody>'+
+    ((d.charges||[]).map(function(c){
+      const q = c.quote||{};
+      const shape = [q.agent, q.days?(q.days+" days"):null, q.band, q.pace, q.fun_level]
+        .filter(function(x){return x}).join(" · ");
+      const rel = c.state==="held"
+        ? '<button class="btn ghost tiny" data-credrelease="'+esc(c.idempotency_key)+
+          '">release</button>'
+        : "";
+      return "<tr><td>"+ago(c.created_at)+"</td><td>"+esc(String(c.trip_id||"—").slice(0,8))+
+        '</td><td class="num"><b>'+num(c.amount)+"</b></td><td>"+stateP(c.state)+
+        '</td><td class="muted">'+esc(shape||"—")+'</td><td class="muted">'+
+        esc(String(c.released_reason||c.reason||"—").slice(0,40))+"</td><td>"+rel+"</td></tr>";
+    }).join("") || '<tr><td colspan="7" class="muted">No charges yet.</td></tr>')+
+    "</tbody></table></div>";
+
+  $("#credLedger").innerHTML = out;
+}
+
+$("#grantBtn").onclick = async function(){
+  const uid = $("#grantUser").value.trim();
+  const amount = Math.floor(Number($("#grantAmount").value));
+  const reason = $("#grantReason").value;
+  const note = $("#grantNote").value.trim();
+  if(!uid){ toast("Pick someone first", true); return; }
+  if(!(amount>0)){ toast("Enter an amount above zero", true); return; }
+  // Mirror the SERVER's ceiling here, before the confirm dialog. The server is
+  // still the authority and still refuses above 10,000 — but this is the one
+  // dialog in the console that says "This is real balance on their account", and
+  // it must not make a promise the server is about to decline. min/max on the
+  // input are advisory only: there is no form submit, so nothing enforces them.
+  if(amount>10000){ toast("Over the 10,000 ceiling — grant it in smaller pieces", true); return; }
+  const who = $("#grantWho").textContent || uid.slice(0,8);
+  // A confirm step, because this is the one control in the console that moves
+  // something a person can see in their own app a second later.
+  if(!confirm("Grant " + amount + " credits to " + who + "? Reason: " + reason +
+    (note ? " — " + note : "") + ". This is real balance on their account.")) return;
+  const btn = $("#grantBtn");
+  btn.disabled = true;
+  try{
+    const r = await api("/api/credit-grant",{method:"POST",body:JSON.stringify({
+      user_id: uid, amount: amount, reason: reason, note: note, token: grantToken()
+    })});
+    // That decision is done — the next press is a new one and gets a new token.
+    GRANT_TOKEN = "";
+    toast(r.duplicate ? "Already granted — nothing was added twice"
+                      : ("Granted " + num(r.granted) + " credits"));
+    $("#grantNote").value = "";
+    CREDIT_UID = uid;
+    loadCredits();
+  }catch(e){ toast(e.message, true); }
+  btn.disabled = false;
+};
+
+$("#tripBtn").onclick = async function(){
+  const id = $("#tripQ").value.trim();
+  if(!id){ toast("Paste a trip id", true); return; }
+  $("#tripOut").innerHTML = '<p class="muted">Looking…</p>';
+  let d;
+  try{ d = await api("/api/credit-trip",{method:"POST",body:JSON.stringify({trip_id:id})}); }
+  catch(e){ $("#tripOut").innerHTML = '<p class="err">'+esc(e.message)+"</p>"; return; }
+  const t = d.trip||{}, q = d.quote||{};
+
+  let out = '<div class="row" style="margin-bottom:10px"><div style="flex:1"><b>'+
+    esc(t.destination||"no destination")+'</b> <span class="muted">'+
+    esc(String(t.start_date||""))+" → "+esc(String(t.end_date||""))+" · "+
+    esc(t.status||"")+'</span><br><span class="muted">owner '+
+    esc(String(t.user_id||"").slice(0,8))+" · rebuilt "+num(t.regen_count)+" times</span></div>"+
+    '<button class="btn ghost tiny" data-credledger="'+esc(t.user_id)+'">owner ledger</button></div>';
+
+  out += '<p class="muted">Today it would quote <b>'+
+    (q.ok ? (num(q.price)+" credits · "+esc(String(q.agent||""))+" · "+num(q.days)+
+      " days · "+esc(String(q.band||"")))
+          : esc(d.quote_error||q.error||"no quote available"))+"</b>"+
+    (q.ok && q.free ? " — free, because the last guide we delivered carried a hard quality failure" : "")+
+    "</p>";
+
+  out += '<table><thead><tr><th>When</th><th class="num">Credits</th><th>State</th>'+
+    '<th>Why</th><th>Key</th><th></th></tr></thead><tbody>'+
+    ((d.charges||[]).map(function(c){
+      const rel = c.state==="held"
+        ? '<button class="btn ghost tiny" data-credrelease="'+esc(c.idempotency_key)+
+          '">release</button>'
+        : "";
+      return "<tr><td>"+ago(c.created_at)+'</td><td class="num"><b>'+num(c.amount)+
+        "</b></td><td>"+stateP(c.state)+'</td><td class="muted">'+
+        esc(String(c.released_reason||c.reason||"—").slice(0,40))+
+        '</td><td class="muted">'+esc(String(c.idempotency_key||""))+"</td><td>"+rel+"</td></tr>";
+    }).join("") ||
+      '<tr><td colspan="6" class="muted">No charge for this trip — it was built before credits, or never built.</td></tr>')+
+    "</tbody></table>";
+
+  $("#tripOut").innerHTML = out;
+};
+
+const LOADERS = {
+  overview: loadOverview, costs: loadCosts, users: loadUsers, credits: loadCredits,
+  quality: loadQuality, learning: loadLearning, ops: loadOps, pricing: loadPricing
+};
+
+if(!CFG) showSection("setup");
+else if(TOKEN) boot();
+else showSection("login");
+</script>
+</body>
+</html>
