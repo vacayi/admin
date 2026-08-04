@@ -145,6 +145,7 @@
 
   <div id="v-costs" class="view hide">
     <div class="grid" id="costKpis"></div>
+    <div id="statsSince" style="margin:6px 0 12px"></div>
     <div id="costWarn"></div>
     <div id="reconcile"></div>
 
@@ -707,6 +708,33 @@ async function loadCosts(){
         "Average per guide", num(m.guides) + " guides · " + num(m.generations) + " generations"),
     kpi(money(m.cost_assistant), "The assistant", num(m.assistant_calls) + " model calls")
   ].join("");
+
+  // ---- THE COUNTING LINE --------------------------------------------
+  //
+  // A reset moves a date; nothing is deleted. Saying WHEN counting started is
+  // what makes a small number after a reset read as a fresh start rather than
+  // as the console being broken again.
+  const since = m.stats_since && !/^1970/.test(String(m.stats_since))
+    ? new Date(m.stats_since) : null;
+  $("#statsSince").innerHTML =
+    (since
+      ? '<span class="muted">Counting since <b>' + since.toLocaleString() + "</b></span>" +
+        ' <button id="statsUndo" class="btn ghost tiny">Include everything again</button>'
+      : '<span class="muted">Counting everything ever recorded.</span>') +
+    ' <button id="statsReset" class="btn ghost tiny">Reset to zero from now</button>';
+  $("#statsReset").onclick = async function(){
+    if (!confirm("Start every cost and count from this moment? Nothing is deleted — " +
+      "history stays in the database and this can be undone.")) return;
+    try { await api("/api/stats-reset", { method: "POST", body: "{}" });
+      toast("Counting from now"); refresh(true); }
+    catch(e){ toast(e.message, true); }
+  };
+  const undoBtn = $("#statsUndo");
+  if (undoBtn) undoBtn.onclick = async function(){
+    try { await api("/api/stats-reset", { method: "POST", body: JSON.stringify({ undo: true }) });
+      toast("Showing everything again"); refresh(true); }
+    catch(e){ toast(e.message, true); }
+  };
 
   // ---- WHAT THIS NUMBER IS NOT --------------------------------------
   //
