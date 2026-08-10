@@ -93,6 +93,7 @@
   <button data-view="users">Users</button>
   <button data-view="credits">Credits</button>
   <button data-view="quality">Quality</button>
+  <button data-view="support">Support</button>
   <button data-view="learning">Learning</button>
   <button data-view="ops">Operations</button>
   <button data-view="pricing">Pricing</button>
@@ -426,6 +427,22 @@
       <h3>Recent feedback</h3>
       <div class="scroll"><table><thead><tr><th>When</th><th class="num">Rating</th>
         <th>Liked</th><th>Issue</th></tr></thead><tbody id="feedback"></tbody></table></div>
+    </div>
+  </div>
+
+  <div id="v-support" class="view hide">
+    <div class="grid" id="supKpis"></div>
+    <div class="card">
+      <h3>Support queue</h3>
+      <p class="muted" style="margin-top:-6px">
+        Filed from the app, with diagnostics attached by the server — trip shape, build
+        version, quality flags, balance, and the last recorded error. Open first, then
+        newest. THIS IS THE ONLY PLACE THEY ARRIVE: the app does not send email, because
+        support@ is a Google Group that refuses outside senders by default and a blank
+        email carries none of the evidence. Nobody reading this tab means nobody
+        answering support.
+      </p>
+      <div id="supRows"></div>
     </div>
   </div>
 
@@ -1124,6 +1141,76 @@ async function loadPricing(){
   }).join("");
 }
 
+async function loadSupport(){
+  const s = await api("/api/support");
+  $("#supKpis").innerHTML =
+    kpi(s.open, "Open", "waiting on a reply") +
+    kpi(s.total, "Total", "last 100") +
+    kpi(Object.keys(s.byKind||{}).length, "Topics", "kinds in the queue");
+
+  const rows = s.rows || [];
+  $("#supRows").innerHTML = rows.length ? rows.map(function(r){
+    const d = r.diagnostics || {};
+    const trip = d.trip || null;
+    const cl = d.client || {};
+    // The diagnostics matter more than the prose here, so they are laid out
+    // as facts rather than buried in a JSON blob nobody expands.
+    const facts = [];
+    if (r.destination) facts.push(esc(r.destination) + (trip && trip.dates ? " · " + esc(trip.dates) : ""));
+    if (trip && trip.status) facts.push("status " + esc(trip.status));
+    if (trip && trip.agent) facts.push(esc(trip.agent));
+    if (trip && trip.pipeline_version != null) facts.push("pv" + esc(trip.pipeline_version));
+    if (trip && trip.quality_score != null) facts.push("score " + esc(trip.quality_score));
+    if (trip && trip.quality_flags && trip.quality_flags.length) {
+      facts.push('<span class="pill bad">' + esc(trip.quality_flags.join(", ")) + "</span>");
+    }
+    if (d.credits_available != null) facts.push(esc(d.credits_available) + " credits");
+    if (d.pro && d.pro.status) facts.push("Pro " + esc(d.pro.status));
+    if (cl.app_version) facts.push("v" + esc(cl.app_version) + " " + esc(cl.platform || ""));
+    if (cl.language) facts.push(esc(cl.language));
+
+    const errs = [];
+    if (d.last_build && d.last_build.ok === false && d.last_build.error) {
+      errs.push("<b>Last build failed:</b> " + esc(String(d.last_build.error).slice(0, 300)));
+    }
+    if (d.last_assistant_error) {
+      errs.push("<b>Assistant error:</b> " + esc(String(d.last_assistant_error.err || "").slice(0, 300)) +
+        (d.last_assistant_error.asked ? ' <span class="muted">(asked: ' + esc(d.last_assistant_error.asked) + ")</span>" : ""));
+    }
+
+    const pill = r.status === "open" ? '<span class="pill bad">open</span>'
+      : r.status === "answered" ? '<span class="pill warn">answered</span>'
+      : '<span class="pill">closed</span>';
+
+    return '<div class="card" style="margin-top:10px">' +
+      '<div class="row" style="justify-content:space-between">' +
+        "<div><b>" + esc(r.kind) + "</b> · " + esc(r.ref) + " " + pill + "</div>" +
+        '<div class="muted">' + ago(r.created_at) + "</div>" +
+      "</div>" +
+      '<p style="margin:8px 0 6px">' + esc(r.body) + "</p>" +
+      '<p class="muted" style="margin:0 0 6px">' +
+        esc(r.display_name || "someone") + (r.handle ? " @" + esc(r.handle) : "") +
+        (r.reply_to ? " · <a href=\"mailto:" + esc(r.reply_to) + "\">" + esc(r.reply_to) + "</a>" : "") +
+      "</p>" +
+      (facts.length ? '<p class="muted" style="margin:0 0 6px">' + facts.join(" · ") + "</p>" : "") +
+      (errs.length ? '<p style="margin:0 0 8px;font-size:12px">' + errs.join("<br>") + "</p>" : "") +
+      '<div class="row" style="gap:6px">' +
+        '<button class="ghost" onclick="supSet(\'' + r.id + '\',\'answered\')">Mark answered</button>' +
+        '<button class="ghost" onclick="supSet(\'' + r.id + '\',\'closed\')">Close</button>' +
+        '<button class="ghost" onclick="supSet(\'' + r.id + '\',\'open\')">Reopen</button>' +
+      "</div>" +
+    "</div>";
+  }).join("") : '<p class="muted">Nothing here. Support requests filed from the app land in this queue.</p>';
+}
+
+async function supSet(id, status){
+  try {
+    await api("/api/support-status", { method:"POST", body: JSON.stringify({ id: id, status: status }) });
+    toast("Marked " + status);
+    loadSupport();
+  } catch(e){ toast("Couldn't update that", true); }
+}
+
 async function loadLearning(){
   const results = await Promise.all([api("/api/edits"), api("/api/complaints")]);
   const e = results[0], c = results[1];
@@ -1461,7 +1548,8 @@ $("#tripBtn").onclick = async function(){
 
 const LOADERS = {
   overview: loadOverview, costs: loadCosts, users: loadUsers, credits: loadCredits,
-  quality: loadQuality, learning: loadLearning, ops: loadOps, pricing: loadPricing
+  quality: loadQuality, support: loadSupport, learning: loadLearning,
+  ops: loadOps, pricing: loadPricing
 };
 
 if(!CFG) showSection("setup");
