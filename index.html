@@ -185,6 +185,27 @@
     </div>
 
     <div class="card">
+      <h3>The Places cost levers — is the Google bill actually shrinking?</h3>
+      <p class="muted" style="margin-top:-4px">
+        Three changes shipped 2026-08-20 to cut the Places bill: a <b>30-day
+        cache</b> (a place looked up once is free to every guide for a month),
+        <b>shared lookups</b> (a restaurant that is both a stop and a meal is
+        bought once, not twice), and a <b>cheap-tier split</b> (a car park or a
+        station only needs a pin, so it asks the cheap question and saves the
+        expensive tier's small free allowance). This panel is the receipt.
+      </p>
+      <div class="grid" id="leverKpis"></div>
+      <div id="leverExplain" style="margin-top:10px"></div>
+      <h3 style="margin-top:18px">Per guide, most recent first</h3>
+      <div class="scroll"><table><thead><tr>
+        <th>Trip</th><th>Built</th><th class="num">Calls billed</th>
+        <th class="num">From cache</th><th class="num">Shared</th>
+        <th class="num">Cheap tier</th><th class="num">Refused (cap)</th>
+      </tr></thead><tbody id="leverRows"></tbody></table></div>
+      <div id="leverNote"></div>
+    </div>
+
+    <div class="card">
       <h3>The most expensive guides built</h3>
       <p class="muted" style="margin-top:-4px">
         An average hides the guide that cost four times the mean, and that guide
@@ -836,6 +857,58 @@ async function loadCosts(){
       '%</b><div class="bar"><i style="width:'+Math.min(100,pct)+'%"></i></div></td></tr>';
   }).join("") || '<tr><td colspan="7" class="muted">Nothing recorded yet — guides built '+
     'before migration 0100 did not count their Google calls.</td></tr>';
+
+  // ---- THE PLACES COST LEVERS -------------------------------------------
+  //
+  // Savings are priced at the RATE IN THE TABLE BELOW, never a hardcoded one,
+  // so editing the rate re-prices this panel the same as everything else.
+  // Untracked guides show a dash, never a zero: counting started 2026-08-20,
+  // and a zero on an older guide would read as "the cache saved nothing" when
+  // the truth is "nothing was counted".
+  const pl = d.places || {};
+  const plt = pl.totals || {};
+  const plRate = Number(((d.api_pricing||[]).find(function(x){return x.sku==="places"})||{}).usd_per_call || 0.035);
+  const avoided = (Number(plt.cached||0) + Number(plt.deduped||0)) * plRate;
+  $("#leverKpis").innerHTML = [
+    kpi(num(plt.cached||0), "Answered from the cache",
+        "calls Google was never asked — ≈ " + money(avoided) + " avoided with shared lookups"),
+    kpi(num(plt.deduped||0), "Shared lookups",
+        "a meal that is also a stop: one call, not two"),
+    kpi(num(plt.lean||0), "Cheap-tier lookups",
+        plt.calls ? Math.round(Number(plt.lean||0)/Number(plt.calls)*100)+"% of billed calls" : "protects the expensive free tier"),
+    kpi(num(pl.cache_rows||0), "Saved answers in the cache",
+        num(pl.cache_fresh||0)+" still fresh (30 days) · "+num(pl.cache_lean||0)+" lean-grade")
+  ].join("");
+  $("#leverExplain").innerHTML = '<table><tbody>' + [
+    ["From cache", "Someone (any guide, any user) asked Google about this exact place in the "+
+      "last 30 days, so the saved answer was reused. <b>Costs $0.</b> Google's terms allow "+
+      "keeping an answer for 30 days — that is why the cache expires and why “fresh” means 30 days."],
+    ["Shared", "“Lunch at Ruka” is ONE restaurant that appears twice in a guide — as a stop on "+
+      "the day and as the chosen meal. It used to be bought twice; the two now share one answer."],
+    ["Cheap tier", "A parking garage or a train station only needs its name and position for a map "+
+      "pin — nobody reads its star rating. Those lookups now ask Google's cheap question. The point "+
+      "is the FREE ALLOWANCE: the expensive tier gets 1,000 free calls a month, the cheap one 10,000, "+
+      "so every lookup moved over stretches the month further."],
+    ["Refused (cap)", "The per-guide budget declined to look this many places up at all — each one is "+
+      "a hole in that guide's map. Should be 0. If it grows, raise the cap; the cache makes that "+
+      "cheaper than it used to be."]
+  ].map(function(r){ return '<tr><td style="white-space:nowrap;vertical-align:top"><b>'+r[0]+
+    '</b></td><td class="muted">'+r[1]+"</td></tr>"; }).join("") + "</tbody></table>";
+  $("#leverRows").innerHTML = (pl.recent||[]).map(function(r){
+    const t = r.tracked;
+    const dash = '<span class="muted">—</span>';
+    return "<tr><td>"+esc(String(r.destination||r.id||"").slice(0,30))+"</td>"+
+      '<td class="muted">'+(r.when ? new Date(r.when).toLocaleDateString() : "—")+"</td>"+
+      '<td class="num">'+num(r.calls)+"</td>"+
+      '<td class="num">'+(t ? (r.cached ? '<b style="color:#2E9E63">'+num(r.cached)+'</b>' : "0") : dash)+"</td>"+
+      '<td class="num">'+(t ? num(r.deduped) : dash)+"</td>"+
+      '<td class="num">'+(t ? num(r.lean) : dash)+"</td>"+
+      '<td class="num">'+(r.capped ? '<b style="color:#D64545">'+num(r.capped)+"</b>" : "0")+"</td></tr>";
+  }).join("") || '<tr><td colspan="7" class="muted">No guides have recorded Places counts yet.</td></tr>';
+  $("#leverNote").innerHTML = '<p class="muted">A <b>—</b> means the guide was built before '+
+    '2026-08-20, when these counters started; it is not a zero. The first REBUILD of any '+
+    'existing trip is the live proof: its “From cache” column should be well above zero, '+
+    'because every place in that guide was already looked up once.</p>';
 
   $("#worst").innerHTML = (d.worst||[]).map(function(w){
     const places = (w.api_calls && w.api_calls.places) || 0;
