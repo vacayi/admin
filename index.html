@@ -85,17 +85,21 @@
   .fresh{font-size:11.5px;color:var(--faint);white-space:nowrap}
   .fresh.err{color:var(--bad)}
 
-  /* ---------- section rail: the sub-navigation inside a tab ---------- */
-  .rail{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;
+  /* ---------- sub-tabs: one section on screen at a time ----------
+     These SHOW a section rather than scrolling to it. The scroll-to version
+     shipped for a day and read as broken: on a short page the scroll moves
+     nothing, and a pill that does nothing visible is a dead button. */
+  .subnav{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;
         padding:8px 0 10px;margin:0 0 8px;background:var(--bg);
-        -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
         scrollbar-width:none}
-  .rail::-webkit-scrollbar{display:none}
-  .rail a{flex:none;text-decoration:none;color:var(--soft);font:700 12px/1 inherit;
+  .subnav::-webkit-scrollbar{display:none}
+  .subnav button{flex:none;color:var(--soft);font:700 12px/1 inherit;cursor:pointer;
         border:1px solid var(--line);border-radius:999px;padding:7px 13px;
         background:var(--card)}
-  .rail a.on{color:#fff;border-color:transparent;
+  .subnav button.on{color:#fff;border-color:transparent;
         background:linear-gradient(90deg,var(--flamingo),var(--violet))}
+  .sec{display:none}
+  .sec.on{display:block}
 
   /* ---------- cards, kpis, tables ---------- */
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
@@ -185,6 +189,58 @@
   #drawerScrim{position:fixed;inset:0;background:rgba(10,7,16,.5);z-index:39;display:none}
   #drawerScrim.on{display:block}
 
+  /* ---------- testing: the artifact sheet's own layout ---------- */
+  .tsum{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .tsum .bar{flex:1;min-width:140px;height:9px}
+  .thead2{display:flex;gap:8px;align-items:center;cursor:pointer;user-select:none}
+  .thead2 .dest{font-weight:800;font-size:15px}
+  .typechip{color:var(--flamingo);font-weight:800;font-size:12px}
+  .stpill{margin-left:auto;font-size:11px;font-weight:800;border-radius:999px;
+        padding:4px 11px;background:var(--mist);color:var(--faint);flex:none}
+  .stpill.building{background:var(--warnbg);color:var(--warn)}
+  .stpill.built{background:var(--goodbg);color:var(--good)}
+  .stpill.failed{background:var(--badbg);color:var(--bad)}
+  .tbody2{display:none;margin-top:12px}
+  .tcard.open .tbody2{display:block}
+  .fieldtbl{background:var(--mist);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+  .fieldtbl .fr{display:flex;gap:12px;padding:4px 0;font-size:13px}
+  .fieldtbl .fk{width:88px;flex:none;color:var(--faint);font-size:10.5px;font-weight:800;
+        text-transform:uppercase;letter-spacing:.8px;padding-top:2px}
+  .anshead{color:var(--flamingo);font-size:11px;font-weight:800;letter-spacing:1.2px;
+        text-transform:uppercase;margin:12px 0 6px}
+  .anslist{margin:0 0 4px;padding-left:20px;font-size:13.5px}
+  .anslist li{margin:3px 0}
+  .whytest{border-top:1px solid var(--line);margin-top:10px;padding-top:10px;font-size:13px;
+        color:var(--soft)}
+  .whytest b{color:var(--flamingo)}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg button{border:1px solid var(--line);background:var(--mist);color:var(--soft);
+        border-radius:999px;padding:8px 16px;font:800 12.5px/1 inherit;cursor:pointer}
+  .seg button.on{background:var(--ink);color:var(--bg);border-color:transparent}
+  .frow{display:flex;gap:10px;align-items:center;margin-top:12px}
+  .frow .fk2{width:88px;flex:none;color:var(--faint);font-size:10.5px;font-weight:800;
+        text-transform:uppercase;letter-spacing:.8px}
+  .chkrow{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);
+        cursor:pointer;user-select:none;align-items:flex-start}
+  .chkrow:last-child{border-bottom:0}
+  .chkbox{width:26px;height:26px;border-radius:9px;border:2px solid var(--line);
+        background:var(--mist);flex:none;display:flex;align-items:center;
+        justify-content:center;font-size:15px;font-weight:800;margin-top:1px}
+  .chkrow.ok .chkbox{background:var(--goodbg);color:var(--good);border-color:var(--good)}
+  .chkrow.no .chkbox{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
+  .chkrow.na{opacity:.5}
+  .chkrow.na .chkbox{color:var(--faint)}
+  .chkrow b{font-size:13.5px}
+  .chkrow .cd{color:var(--soft);font-size:12px;margin-top:1px}
+
+  /* ---------- debugging tab ---------- */
+  .dbgrow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;
+        border-bottom:1px solid var(--line)}
+  .dbgrow.fixed{opacity:.5}
+  .dbgrow.fixed .dt{text-decoration:line-through}
+  .dbgrow .dt{font-size:13.5px;flex:1}
+  .dbgrow .when{color:var(--faint);font-size:11px;white-space:nowrap;padding-top:2px}
+
   /* ---------- testing + roadmap widgets ---------- */
   .tcard{background:var(--card);border:1px solid var(--line);border-radius:14px;
         padding:14px;margin-bottom:12px}
@@ -257,19 +313,26 @@
   /* ---------- phones ---------- */
   @media (max-width:880px){
     #shell.on{display:block}
-    aside{position:fixed;inset:auto 0 0 0;height:auto;flex-direction:row;overflow-x:auto;
-        overflow-y:hidden;border-right:0;border-top:1px solid var(--line);
-        padding:8px 10px calc(8px + env(safe-area-inset-bottom));gap:4px;z-index:30;
+    /* EVERY TAB VISIBLE AT ONCE. flex:1 across the bar, never a horizontal
+       scroll - a nav that has to be scrolled to be discovered hides tabs,
+       which is exactly what was reported. Labels shrink before buttons drop. */
+    aside{position:fixed;inset:auto 0 0 0;height:auto;flex-direction:row;
+        overflow:visible;border-right:0;border-top:1px solid var(--line);
+        padding:7px 4px calc(7px + env(safe-area-inset-bottom));gap:2px;z-index:30;
         background:var(--mist)}
     .brand,.side-foot{display:none}
-    nav button{flex:none;flex-direction:column;gap:3px;padding:7px 11px;font-size:10px;
-        border-radius:10px;align-items:center}
-    nav button .ic{font-size:19px;width:auto}
-    nav button .n{position:absolute;transform:translate(14px,-8px);margin:0}
+    nav button{flex:1 1 0;min-width:0;flex-direction:column;gap:2px;padding:6px 2px;
+        font-size:9px;border-radius:9px;align-items:center;position:relative}
+    nav button span:not(.ic):not(.n){overflow:hidden;text-overflow:ellipsis;
+        white-space:nowrap;max-width:100%}
+    nav button .ic{font-size:18px;width:auto}
+    nav button .n{position:absolute;top:0;right:2px;transform:none;margin:0;
+        padding:1px 5px;font-size:9px}
     main{padding:14px 14px calc(96px + env(safe-area-inset-bottom))}
     .topstrip h2{font-size:18px}
     .grid{grid-template-columns:repeat(auto-fit,minmax(128px,1fr))}
     .kpi .v{font-size:20px}
+    .fieldtbl .fk{width:76px}
   }
 </style>
 <meta name="robots" content="noindex, nofollow">
@@ -319,13 +382,14 @@
       <div><b>vacayi</b><small>command</small></div>
     </div>
     <nav id="nav">
-      <button data-view="overview" class="on"><span class="ic">◉</span>Overview</button>
-      <button data-view="support"><span class="ic">🛟</span>Support<span class="n hide" id="navSupportN"></span></button>
-      <button data-view="money"><span class="ic">💰</span>Money</button>
-      <button data-view="ailab"><span class="ic">🧠</span>AI Lab</button>
-      <button data-view="users"><span class="ic">👥</span>Users</button>
-      <button data-view="testing"><span class="ic">🧪</span>Testing</button>
-      <button data-view="roadmap"><span class="ic">🗺️</span>Roadmap</button>
+      <button data-view="overview" class="on"><span class="ic">◉</span><span>Overview</span></button>
+      <button data-view="support"><span class="ic">🛟</span><span>Support</span><span class="n hide" id="navSupportN"></span></button>
+      <button data-view="money"><span class="ic">💰</span><span>Money</span></button>
+      <button data-view="ailab"><span class="ic">🧠</span><span>AI Lab</span></button>
+      <button data-view="users"><span class="ic">👥</span><span>Users</span></button>
+      <button data-view="testing"><span class="ic">🧪</span><span>Testing</span></button>
+      <button data-view="debug"><span class="ic">🐞</span><span>Debug</span><span class="n hide" id="navDebugN"></span></button>
+      <button data-view="roadmap"><span class="ic">🗺️</span><span>Roadmap</span></button>
     </nav>
     <div class="side-foot">
       <span class="muted" id="who"></span>
@@ -390,190 +454,222 @@
 </div>
 <!-- ============================= SUPPORT ============================= -->
 <div id="v-support" class="view hide">
-  <div class="rail">
-    <a href="#sup-queue">Queue</a><a href="#sup-credits">Credit tools</a>
-    <a href="#sup-holds">Stuck holds</a><a href="#sup-trip">Trip lookup</a>
-  </div>
-
   <div class="grid" id="supKpis"></div>
 
-  <div class="card" id="sup-queue">
-    <h3>The queue <span class="tag">support tickets</span></h3>
-    <p class="blurb">The <b>only</b> place these arrive — the app files reports into a table
-      instead of emailing, so if nobody reads this, nobody is answering support. Each row
-      carries the diagnostics the app attached. <b>Open → answered</b> when you have
-      replied; <b>closed</b> when there is nothing left to do.</p>
-    <div class="scroll"><table><thead><tr>
-      <th>When</th><th>Kind</th><th>From</th><th>Message</th><th>Status</th>
-    </tr></thead><tbody id="supRows"></tbody></table></div>
+  <!-- SUB-TABS, not scroll-anchors. The anchor version shipped for a day and
+       read as broken: on a short page the scroll moves nothing, and a pill
+       that does nothing visible is a dead button. These SHOW one section. -->
+  <div class="subnav">
+    <button data-sec="sup-queue" class="on">Queue</button>
+    <button data-sec="sup-credits">Credit tools</button>
+    <button data-sec="sup-holds">Stuck holds</button>
+    <button data-sec="sup-trip">Trip lookup</button>
   </div>
 
-  <div class="card" id="sup-credits">
-    <h3>Credit tools <span class="tag">grant · take back</span></h3>
-    <p class="blurb">Granting mints an <b>admin lot</b> with your id on it, so the ledger can
-      answer "who did this and why" forever. Take-backs are deliberately narrow: only a lot
-      this console created, and only while completely untouched — a store purchase must be
-      refunded at the store, and clawing back spent credits would put a traveller in debt
-      for guides we already built.</p>
-    <div class="row" style="margin-bottom:10px">
-      <div style="flex:2;min-width:200px"><label>Who</label>
-        <input id="cgWho" placeholder="search name, email, handle or paste a user id"></div>
-      <div style="flex:1;min-width:90px"><label>Credits</label>
-        <input id="cgAmt" type="number" min="1" placeholder="50"></div>
-      <div style="flex:2;min-width:150px"><label>Why (goes in the ledger)</label>
-        <input id="cgNote" placeholder="purchase never landed / tester / apology"></div>
-      <div><label>&nbsp;</label><button class="btn grad" id="cgGo">Grant</button></div>
+  <div class="sec on" id="sup-queue">
+    <div class="card">
+      <h3>The queue <span class="tag">support tickets</span></h3>
+      <p class="blurb">The <b>only</b> place these arrive — the app files reports into a table
+        instead of emailing, so if nobody reads this, nobody is answering support. Each row
+        carries the diagnostics the app attached. <b>Open → answered</b> when you have
+        replied; <b>closed</b> when there is nothing left to do.</p>
+      <div class="scroll"><table><thead><tr>
+        <th>When</th><th>Kind</th><th>From</th><th>Message</th><th>Status</th>
+      </tr></thead><tbody id="supRows"></tbody></table></div>
     </div>
-    <div id="cgMatches"></div>
-    <div id="cgPicked" class="muted"></div>
-    <div id="cgLedger" style="margin-top:12px"></div>
   </div>
 
-  <div class="card" id="sup-holds">
-    <h3>Stuck holds <span class="tag">credits in limbo</span></h3>
-    <p class="blurb">A hold is credits reserved when a guide starts building; it settles on
-      delivery or is released on failure. One still <b>held after three hours</b> is stuck —
-      the credits are gone from the balance and nothing was delivered. <b>Release</b> puts
-      them back into the exact lots they came from; it does not rebuild anything.</p>
-    <div id="holdRows"></div>
-  </div>
-
-  <div class="card" id="sup-trip">
-    <h3>Trip lookup <span class="tag">"I was charged twice for Rome"</span></h3>
-    <p class="blurb">Every charge on one trip with its state, plus what the trip would be
-      quoted today. A <b>void</b> charge was refunded automatically; <b>held</b> is in
-      flight; <b>settled</b> is real money's worth of credits.</p>
-    <div class="row">
-      <div style="flex:1;min-width:220px"><input id="ctId" placeholder="trip id (uuid)"></div>
-      <button class="btn ghost" id="ctGo">Look up</button>
+  <div class="sec" id="sup-credits">
+    <div class="card">
+      <h3>Credit tools <span class="tag">grant · take back</span></h3>
+      <p class="blurb">Granting mints an <b>admin lot</b> with your id on it, so the ledger can
+        answer "who did this and why" forever. Take-backs are deliberately narrow: only a lot
+        this console created, and only while completely untouched — a store purchase must be
+        refunded at the store, and clawing back spent credits would put a traveller in debt
+        for guides we already built.</p>
+      <div class="row" style="margin-bottom:10px">
+        <div style="flex:2;min-width:200px"><label>Who</label>
+          <input id="cgWho" placeholder="search name, email, handle or paste a user id"></div>
+        <div style="flex:1;min-width:90px"><label>Credits</label>
+          <input id="cgAmt" type="number" min="1" placeholder="50"></div>
+        <div style="flex:2;min-width:150px"><label>Why (goes in the ledger)</label>
+          <input id="cgNote" placeholder="purchase never landed / tester / apology"></div>
+        <div><label>&nbsp;</label><button class="btn grad" id="cgGo">Grant</button></div>
+      </div>
+      <div id="cgMatches"></div>
+      <div id="cgPicked" class="muted"></div>
+      <div id="cgLedger" style="margin-top:12px"></div>
     </div>
-    <div id="ctOut" style="margin-top:12px"></div>
+  </div>
+
+  <div class="sec" id="sup-holds">
+    <div class="card">
+      <h3>Stuck holds <span class="tag">credits in limbo</span></h3>
+      <p class="blurb">A hold is credits reserved when a guide starts building; it settles on
+        delivery or is released on failure. One still <b>held after three hours</b> is stuck —
+        the credits are gone from the balance and nothing was delivered. <b>Release</b> puts
+        them back into the exact lots they came from; it does not rebuild anything.</p>
+      <div id="holdRows"></div>
+    </div>
+  </div>
+
+  <div class="sec" id="sup-trip">
+    <div class="card">
+      <h3>Trip lookup <span class="tag">"I was charged twice for Rome"</span></h3>
+      <p class="blurb">Every charge on one trip with its state, plus what the trip would be
+        quoted today. A <b>void</b> charge was refunded automatically; <b>held</b> is in
+        flight; <b>settled</b> is real money's worth of credits.</p>
+      <div class="row">
+        <div style="flex:1;min-width:220px"><input id="ctId" placeholder="trip id (uuid)"></div>
+        <button class="btn ghost" id="ctGo">Look up</button>
+      </div>
+      <div id="ctOut" style="margin-top:12px"></div>
+    </div>
   </div>
 </div>
 <!-- ============================= MONEY ============================= -->
 <div id="v-money" class="view hide">
-  <div class="rail">
-    <a href="#mo-bill">The bill</a><a href="#mo-econ">Per guide</a>
-    <a href="#mo-google">Google</a><a href="#mo-waste">Waste</a>
-    <a href="#mo-daily">Daily</a><a href="#mo-ops">Queue &amp; errors</a>
-    <a href="#mo-rates">Rates</a>
-  </div>
-
   <div class="grid" id="costKpis"></div>
-  <div id="statsSince" style="margin:2px 0 12px"></div>
-  <div id="reconcile"></div>
 
-  <div class="card" id="mo-bill">
-    <h3>Where the money goes <span class="tag">stage 1 · stage 2 · google</span></h3>
-    <p class="blurb">One guide is <b>three bills</b>: Gemini plans it (Stage 1), Claude
-      writes it (Stage 2), Google grounds it (Places / Routes / Weather). Before migration
-      0100 only Stage 2 was counted anywhere, so every earlier total was a fraction of the
-      bill wearing the whole bill's clothes. The reconciliation strip above names what the
-      pipeline still cannot see — a vendor invoice is always a little higher.</p>
-    <div id="split"></div>
+  <!-- ONE SECTION AT A TIME. Reported as overwhelming when it was seven dense
+       cards in one scroll; the story sub-tab is the plain-English version and
+       the detail lives behind its own pills for the day it is actually needed. -->
+  <div class="subnav">
+    <button data-sec="mo-story" class="on">The story</button>
+    <button data-sec="mo-econ">Per guide</button>
+    <button data-sec="mo-google">Google</button>
+    <button data-sec="mo-waste">Waste</button>
+    <button data-sec="mo-daily">Daily</button>
+    <button data-sec="mo-ops">Queue &amp; errors</button>
+    <button data-sec="mo-rates">Rates</button>
   </div>
 
-  <div class="card" id="mo-econ">
-    <h3>What a guide costs, by what was sold</h3>
-    <p class="blurb">Margin is read at the <b>deepest discount sold</b> — Pro annual,
-      $0.0208 a credit — because an average rate is what hid the losses 0098 had to
-      correct. A band in the red here means that shape of guide loses money on every
-      sale to an annual subscriber. Only guides that were actually charged count.</p>
-    <div class="scroll"><table><thead><tr>
-      <th>Agent</th><th>Band</th><th class="num">Guides</th>
-      <th class="num">Stage 1</th><th class="num">Stage 2</th><th class="num">Google</th>
-      <th class="num">Avg total</th><th class="num">Credits</th><th class="num">Margin</th>
-    </tr></thead><tbody id="econ"></tbody></table></div>
-  </div>
-
-  <div class="card" id="mo-google">
-    <h3>Google, against the free allowance</h3>
-    <p class="blurb">The Places SKU we use is free to <b>1,000 calls a month</b> and about
-      $35 per thousand after (check the console, not this sentence — pricing has moved
-      twice). A guide makes ~39 calls, so the free tier covers roughly 25–32 fresh guides
-      a month; the cache below stretches it further. Watch <b>% of free</b> — past 80%
-      every extra guide starts costing more in Google than in models.</p>
-    <div class="scroll"><table><thead><tr>
-      <th>Month</th><th>SKU</th><th class="num">Calls</th><th class="num">Free</th>
-      <th class="num">Billable</th><th class="num">Cost</th><th class="num">% of free</th>
-    </tr></thead><tbody id="google"></tbody></table></div>
-    <h3 style="margin-top:18px">The cost levers <span class="tag">is the bill shrinking?</span></h3>
-    <p class="blurb">Three levers shipped 2026-08-20: a <b>30-day cache</b> (a place looked
-      up once is free to every guide for a month), <b>shared lookups</b> (a restaurant
-      that is both a stop and a meal is bought once), and a <b>cheap-tier split</b> (a car
-      park only needs a pin, so it asks the cheap question). "From cache" climbing on
-      rebuilds is the receipt that they work. A dash means the guide predates counting —
-      never a zero.</p>
-    <div class="grid" id="leverKpis"></div>
-    <div id="leverExplain" style="margin-bottom:10px"></div>
-    <div class="scroll"><table><thead><tr>
-      <th>Trip</th><th>Built</th><th class="num">Billed</th><th class="num">Cache</th>
-      <th class="num">Shared</th><th class="num">Cheap</th><th class="num">Refused</th>
-    </tr></thead><tbody id="leverRows"></tbody></table></div>
-    <div id="leverNote"></div>
-  </div>
-
-  <div class="card" id="mo-waste">
-    <h3>Waste <span class="tag">spend that bought nothing</span></h3>
-    <p class="blurb"><b>Free rebuilds</b> are guides given away because the previous one
-      carried a hard quality flag — a false-positive check literally hands out the
-      product, which is why two were hunted down in August. <b>Retries</b> are attempts
-      the worker paid for and threw away; their recorded cost is a floor, because a
-      failed call often records no tokens at all. <b>Refused places</b> are lookups the
-      cap declined — a map with holes in it.</p>
-    <div class="grid" id="wasteKpis"></div>
-    <div id="retryWrap"></div>
-    <div id="cappedWrap"></div>
-  </div>
-
-  <div class="card" id="mo-daily">
-    <h3>Daily breakdown</h3>
-    <div class="scroll"><table><thead><tr>
-      <th>Day</th><th class="num">Runs</th><th class="num">OK</th><th class="num">Users</th>
-      <th class="num">Stage 1</th><th class="num">Stage 2</th><th class="num">Google</th>
-      <th class="num">Spend</th>
-    </tr></thead><tbody id="daily"></tbody></table></div>
-  </div>
-
-  <div class="card" id="mo-ops">
-    <h3>Queue &amp; errors <span class="tag">operations</span></h3>
-    <p class="blurb">The generation queue, live. A job <b>pending</b> for more than a few
-      minutes means the worker is down or wedged — check Railway. <b>Requeue</b> re-runs
-      a failed trip without charging again.</p>
-    <div class="scroll"><table><thead><tr>
-      <th>When</th><th>Trip</th><th>Status</th><th class="num">Attempts</th><th>Error</th><th></th>
-    </tr></thead><tbody id="jobRows"></tbody></table></div>
-    <h3 style="margin-top:18px">Failure patterns</h3>
-    <div id="errGroups"></div>
-  </div>
-
-  <div class="card" id="mo-rates">
-    <h3>Rates <span class="tag">what the math above uses</span></h3>
-    <p class="blurb">Vendor prices as editable rows, because a rate change must be an
-      <b>update, not a deploy</b> — or the console quietly reports last quarter's prices
-      forever. Every dollar figure above is computed from these.</p>
-    <div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
-      <div><h3 style="font-size:13px">Models ($ / M tokens)</h3><div id="ratesModels"></div></div>
-      <div><h3 style="font-size:13px">APIs ($ / call)</h3><div id="ratesApis"></div></div>
+  <div class="sec on" id="mo-story">
+    <div class="card">
+      <h3>The story, in plain words</h3>
+      <div id="moStory"></div>
     </div>
-    <div class="row" style="margin-top:14px">
-      <button class="btn ghost tiny" id="statsResetBtn">Reset the counting line to now</button>
-      <button class="btn ghost tiny" id="statsUnresetBtn">Undo reset</button>
-      <span class="tiny">A reset is a date, never a delete — costs before the line stop counting, and undo restores them.</span>
+    <div class="card">
+      <h3>Where the money goes <span class="tag">one guide is three bills</span></h3>
+      <p class="blurb">Gemini plans it (Stage 1), Claude writes it (Stage 2), Google grounds
+        it (Places / Routes / Weather). Nothing here is a mystery number — every bar below is
+        real recorded spend, and the reconciliation table names exactly what the pipeline
+        cannot see.</p>
+      <div id="split"></div>
+    </div>
+    <div id="reconcile"></div>
+  </div>
+
+  <div class="sec" id="mo-econ">
+    <div class="card">
+      <h3>What a guide costs, by what was sold</h3>
+      <p class="blurb"><b>Read one column: Margin.</b> Green means that shape of guide makes
+        money even at the deepest discount sold (Pro annual, $0.0208 a credit); red means it
+        loses money on every sale to an annual subscriber — the losses 0098 had to correct
+        were hiding behind an average. Only guides that were actually charged count.</p>
+      <div class="scroll"><table><thead><tr>
+        <th>Agent</th><th>Band</th><th class="num">Guides</th>
+        <th class="num">Stage 1</th><th class="num">Stage 2</th><th class="num">Google</th>
+        <th class="num">Avg total</th><th class="num">Credits</th><th class="num">Margin</th>
+      </tr></thead><tbody id="econ"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="sec" id="mo-google">
+    <div class="card">
+      <h3>Google, against the free allowance</h3>
+      <p class="blurb"><b>Read one column: % of free.</b> Google gives 1,000 free Places calls
+        a month and a guide uses ~39, so the free tier covers roughly 25–32 fresh guides.
+        Green is fine, amber is half gone, red means every extra guide starts costing more in
+        Google than in models.</p>
+      <div class="scroll"><table><thead><tr>
+        <th>Month</th><th>SKU</th><th class="num">Calls</th><th class="num">Free</th>
+        <th class="num">Billable</th><th class="num">Cost</th><th class="num">% of free</th>
+      </tr></thead><tbody id="google"></tbody></table></div>
+      <h3 style="margin-top:18px">The cost levers <span class="tag">is the bill shrinking?</span></h3>
+      <p class="blurb">Three tricks shipped 2026-08-20 to shrink the Google bill. The receipt
+        that they work is <b>"From cache" climbing on rebuilds</b>. A dash means the guide
+        predates counting — never a zero.</p>
+      <div class="grid" id="leverKpis"></div>
+      <div id="leverExplain" style="margin-bottom:10px"></div>
+      <div class="scroll"><table><thead><tr>
+        <th>Trip</th><th>Built</th><th class="num">Billed</th><th class="num">Cache</th>
+        <th class="num">Shared</th><th class="num">Cheap</th><th class="num">Refused</th>
+      </tr></thead><tbody id="leverRows"></tbody></table></div>
+      <div id="leverNote"></div>
+    </div>
+  </div>
+
+  <div class="sec" id="mo-waste">
+    <div class="card">
+      <h3>Waste <span class="tag">spend that bought nothing</span></h3>
+      <p class="blurb"><b>Free rebuilds</b> are guides given away because the previous one
+        carried a hard quality flag — a false-positive check literally hands out the product.
+        <b>Retries</b> are attempts the worker paid for and threw away. <b>Refused places</b>
+        are lookups the cap declined — a map with holes in it.</p>
+      <div class="grid" id="wasteKpis"></div>
+      <div id="retryWrap"></div>
+      <div id="cappedWrap"></div>
+    </div>
+  </div>
+
+  <div class="sec" id="mo-daily">
+    <div class="card">
+      <h3>Daily breakdown</h3>
+      <div class="scroll"><table><thead><tr>
+        <th>Day</th><th class="num">Runs</th><th class="num">OK</th><th class="num">Users</th>
+        <th class="num">Stage 1</th><th class="num">Stage 2</th><th class="num">Google</th>
+        <th class="num">Spend</th>
+      </tr></thead><tbody id="daily"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="sec" id="mo-ops">
+    <div class="card">
+      <h3>Queue &amp; errors <span class="tag">operations</span></h3>
+      <p class="blurb">The generation queue, live. A job <b>pending</b> for more than a few
+        minutes means the worker is down or wedged — check Railway. <b>Requeue</b> re-runs
+        a failed trip without charging again.</p>
+      <div class="scroll"><table><thead><tr>
+        <th>When</th><th>Trip</th><th>Status</th><th class="num">Attempts</th><th>Error</th><th></th>
+      </tr></thead><tbody id="jobRows"></tbody></table></div>
+      <h3 style="margin-top:18px">Failure patterns</h3>
+      <div id="errGroups"></div>
+    </div>
+  </div>
+
+  <div class="sec" id="mo-rates">
+    <div class="card">
+      <h3>Rates <span class="tag">what the math above uses</span></h3>
+      <p class="blurb">Vendor prices as editable rows, because a rate change must be an
+        <b>update, not a deploy</b> — or the console quietly reports last quarter's prices
+        forever. Every dollar figure on this tab is computed from these.</p>
+      <div id="statsSince" style="margin:2px 0 12px"></div>
+      <div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+        <div><h3 style="font-size:13px">Models ($ / M tokens)</h3><div id="ratesModels"></div></div>
+        <div><h3 style="font-size:13px">APIs ($ / call)</h3><div id="ratesApis"></div></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn ghost tiny" id="statsResetBtn">Reset the counting line to now</button>
+        <button class="btn ghost tiny" id="statsUnresetBtn">Undo reset</button>
+        <span class="tiny">A reset is a date, never a delete — costs before the line stop counting, and undo restores them.</span>
+      </div>
     </div>
   </div>
 </div>
 <!-- ============================= AI LAB ============================= -->
 <div id="v-ailab" class="view hide">
-  <div class="rail">
-    <a href="#ai-score">Scorecard</a><a href="#ai-flags">Failing checks</a>
-    <a href="#ai-complaints">Complaints</a><a href="#ai-edits">Assistant edits</a>
-    <a href="#ai-ratings">Ratings</a>
-  </div>
-
   <div class="grid" id="qKpis"></div>
 
-  <div class="card" id="ai-score">
+  <div class="subnav">
+    <button data-sec="ai-score" class="on">Scorecard</button>
+    <button data-sec="ai-flags">Failing checks</button>
+    <button data-sec="ai-complaints">Complaints</button>
+    <button data-sec="ai-edits">Assistant edits</button>
+    <button data-sec="ai-ratings">Ratings</button>
+  </div>
+
+  <div class="sec on" id="ai-score"><div class="card">
     <h3>The scorecard <span class="tag">by pipeline version</span></h3>
     <p class="blurb">Every guide is scored at birth by ~40 deterministic checks — pure
       arithmetic, no model judging a model. <b>The number to watch is clean %</b> (guides
@@ -586,9 +682,9 @@
       <th>Pipeline</th><th class="num">Guides</th><th class="num">Avg score</th>
       <th class="num">Hard fails</th><th class="num">Clean %</th><th>Last run</th>
     </tr></thead><tbody id="qVersions"></tbody></table></div>
-  </div>
+  </div></div>
 
-  <div class="card" id="ai-flags">
+  <div class="sec" id="ai-flags"><div class="card">
     <h3>Which checks fail most <span class="tag">the to-do list</span></h3>
     <p class="blurb">The top <b>hard</b>-severity row is the single best-value thing to fix
       next. Two warnings from experience: a hard flag makes the traveller's next rebuild
@@ -598,9 +694,9 @@
     <div class="scroll"><table><thead><tr>
       <th>Check</th><th>Severity</th><th class="num">Failures</th><th class="num">Guides</th>
     </tr></thead><tbody id="qFlags"></tbody></table></div>
-  </div>
+  </div></div>
 
-  <div class="card" id="ai-complaints">
+  <div class="sec" id="ai-complaints"><div class="card">
     <h3>Complaints <span class="tag">travellers' own words</span></h3>
     <p class="blurb">The highest-signal rows in the whole database: someone doing free QA
       on a specific, reproducible failure. Detection is deliberately over-inclusive — a
@@ -611,9 +707,9 @@
     <div class="scroll"><table><thead><tr>
       <th>When</th><th>Topic</th><th>Confidence</th><th>What they said</th>
     </tr></thead><tbody id="cRows"></tbody></table></div>
-  </div>
+  </div></div>
 
-  <div class="card" id="ai-edits">
+  <div class="sec" id="ai-edits"><div class="card">
     <h3>What people ask the assistant to change</h3>
     <p class="blurb">Read the split before treating volume as defects: a
       <b>correction</b> ("the museum is closed Mondays") is the AI getting something
@@ -624,9 +720,9 @@
     <div class="scroll"><table><thead><tr>
       <th>When</th><th>Request</th><th>Section</th><th>Intent</th><th>Status</th>
     </tr></thead><tbody id="editRows"></tbody></table></div>
-  </div>
+  </div></div>
 
-  <div class="card" id="ai-ratings">
+  <div class="sec" id="ai-ratings"><div class="card">
     <h3>Ratings <span class="tag">guide feedback</span></h3>
     <p class="blurb">The star the traveller gave, and which aspects they praised. Sparse
       by design — it pays credits, so it skews to people who finished a trip.</p>
@@ -634,7 +730,7 @@
     <div class="scroll"><table><thead><tr>
       <th>When</th><th class="num">★</th><th>Liked</th><th>Issue</th>
     </tr></thead><tbody id="fbRows"></tbody></table></div>
-  </div>
+  </div></div>
 </div>
 
 <!-- ============================= USERS ============================= -->
@@ -660,12 +756,13 @@
 </div>
 <!-- ============================= TESTING ============================= -->
 <div id="v-testing" class="view hide">
-  <div class="card" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
-    <div id="tRings" style="display:flex;gap:16px;align-items:center"></div>
-    <div style="flex:1;min-width:200px">
-      <div class="muted" style="margin-bottom:6px">Every tick saves for both of you, instantly — this is the shared copy, not a per-browser one.</div>
+  <div class="card tsum">
+    <div style="flex:1;min-width:200px;width:100%">
+      <div class="row" style="justify-content:space-between;margin-bottom:6px">
+        <b id="tSumLabel" style="font-size:14px"></b>
+        <span class="tiny">shared — a tick here is a tick for both of you</span>
+      </div>
       <div class="bar" style="height:9px"><i id="tTotalBar" style="width:0%"></i></div>
-      <div class="tiny" id="tTotalLabel" style="margin-top:5px"></div>
     </div>
   </div>
   <div class="filterrow" id="tFilters"></div>
@@ -676,6 +773,29 @@
     <p class="blurb">Behaviours that only need proving once each, on whichever test guide
       is handy. Tap to cycle <b>✓ pass → ✕ fail → – skipped</b>.</p>
     <div id="xRows"></div>
+  </div>
+</div>
+
+<!-- ============================= DEBUGGING ============================= -->
+<div id="v-debug" class="view hide">
+  <div class="card">
+    <h3>Spotted something broken? <span class="tag">ten seconds, no forms</span></h3>
+    <p class="blurb">One line, in your own words — where you were and what looked wrong.
+      That is all Claude needs to start; everything else is in the databases. Shared
+      between the two of you, instantly.</p>
+    <div class="row">
+      <input id="dbgIn" placeholder="e.g. Iceland guide — day 3 map draws through the ocean"
+        style="flex:1;min-width:200px">
+      <button class="btn grad" id="dbgAdd">Add</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:6px">
+      <h3 style="margin:0;flex:1">The list <span class="tag" id="dbgCount"></span></h3>
+      <button class="btn grad tiny" id="dbgReport">📋 Copy report for Claude</button>
+    </div>
+    <div id="dbgRows"></div>
   </div>
 </div>
 
@@ -844,7 +964,8 @@ let LAST_OK = 0;
 let INFLIGHT = false;
 let AUTO = true;
 const TITLES = { overview:"Overview", support:"Support", money:"Money",
-  ailab:"AI Lab", users:"Users", testing:"Guide testing", roadmap:"Road to public" };
+  ailab:"AI Lab", users:"Users", testing:"Guide testing", debug:"Debugging",
+  roadmap:"Road to public" };
 
 async function refresh(force){
   const fn = LOADERS[CURRENT];
@@ -885,29 +1006,27 @@ function goTab(view){
 }
 $$("#nav button").forEach(function(b){ b.onclick = function(){ goTab(b.dataset.view); }; });
 
-// Section rails: highlight the pill of the section on screen.
-(function(){
-  document.addEventListener("click", function(e){
-    const a = e.target.closest ? e.target.closest(".rail a") : null;
-    if (!a) return;
-    e.preventDefault();
-    const el = $(a.getAttribute("href"));
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+// SUB-TABS: one section visible at a time. The scroll-to-anchor rail this
+// replaces shipped for a day and was reported as broken — on a short page the
+// scroll moves nothing, and a pill with no visible effect is a dead button.
+// Showing the section cannot fail that way.
+function goSec(secId){
+  const sec = $("#" + secId);
+  if (!sec) return;
+  const view = sec.closest(".view");
+  if (!view) return;
+  view.querySelectorAll(".subnav button").forEach(function(b){
+    b.classList.toggle("on", b.dataset.sec === secId);
   });
-  const spy = function(){
-    const rail = $("#v-" + CURRENT + " .rail");
-    if (!rail) return;
-    let best = null;
-    $$("#v-" + CURRENT + " .rail a").forEach(function(a){
-      const el = $(a.getAttribute("href"));
-      if (el && el.getBoundingClientRect().top < 140) best = a;
-    });
-    $$("#v-" + CURRENT + " .rail a").forEach(function(a){
-      a.classList.toggle("on", a === best);
-    });
-  };
-  window.addEventListener("scroll", spy, { passive: true });
-})();
+  view.querySelectorAll(".sec").forEach(function(p){
+    p.classList.toggle("on", p.id === secId);
+  });
+  window.scrollTo(0, 0);
+}
+document.addEventListener("click", function(e){
+  const b = e.target.closest ? e.target.closest(".subnav button") : null;
+  if (b) goSec(b.dataset.sec);
+});
 
 // ---------------- the command palette (Ctrl/Cmd+K) ----------------
 // Tabs, sections, and — once the roster has loaded once — people. Typing a
@@ -916,14 +1035,18 @@ $$("#nav button").forEach(function(b){ b.onclick = function(){ goTab(b.dataset.v
 let PAL_PEOPLE = [];
 const PAL_FIXED = [
   { t:"Overview", k:"tab", go:function(){ goTab("overview"); } },
-  { t:"Support — queue", k:"tab", go:function(){ goTab("support"); } },
-  { t:"Support — grant credits", k:"action", go:function(){ goTab("support"); setTimeout(function(){ const el=$("#sup-credits"); if(el) el.scrollIntoView(); }, 150); } },
-  { t:"Money — the bill", k:"tab", go:function(){ goTab("money"); } },
-  { t:"Money — queue & errors", k:"action", go:function(){ goTab("money"); setTimeout(function(){ const el=$("#mo-ops"); if(el) el.scrollIntoView(); }, 150); } },
-  { t:"AI Lab — quality", k:"tab", go:function(){ goTab("ailab"); } },
-  { t:"AI Lab — complaints", k:"action", go:function(){ goTab("ailab"); setTimeout(function(){ const el=$("#ai-complaints"); if(el) el.scrollIntoView(); }, 150); } },
+  { t:"Support — queue", k:"tab", go:function(){ goTab("support"); goSec("sup-queue"); } },
+  { t:"Support — grant credits", k:"action", go:function(){ goTab("support"); goSec("sup-credits"); } },
+  { t:"Support — stuck holds", k:"action", go:function(){ goTab("support"); goSec("sup-holds"); } },
+  { t:"Support — trip lookup", k:"action", go:function(){ goTab("support"); goSec("sup-trip"); } },
+  { t:"Money — the story", k:"tab", go:function(){ goTab("money"); goSec("mo-story"); } },
+  { t:"Money — queue & errors", k:"action", go:function(){ goTab("money"); goSec("mo-ops"); } },
+  { t:"Money — rates", k:"action", go:function(){ goTab("money"); goSec("mo-rates"); } },
+  { t:"AI Lab — quality", k:"tab", go:function(){ goTab("ailab"); goSec("ai-score"); } },
+  { t:"AI Lab — complaints", k:"action", go:function(){ goTab("ailab"); goSec("ai-complaints"); } },
   { t:"Users", k:"tab", go:function(){ goTab("users"); } },
   { t:"Guide testing", k:"tab", go:function(){ goTab("testing"); } },
+  { t:"Debug — report something broken", k:"tab", go:function(){ goTab("debug"); } },
   { t:"Road to public", k:"tab", go:function(){ goTab("roadmap"); } }
 ];
 let palIdx = 0;
@@ -1115,8 +1238,7 @@ async function loadOverview(){
   $$("#ovAttention [data-go]").forEach(function(b){
     b.onclick = function(){
       goTab(b.dataset.go);
-      const sec = b.dataset.sec;
-      setTimeout(function(){ const el = $(sec); if (el) el.scrollIntoView(); }, 200);
+      if (b.dataset.sec) goSec(b.dataset.sec.replace("#", ""));
     };
   });
 
@@ -1340,6 +1462,35 @@ async function loadMoney(){
   });
   const gg = (d.daily || []).reduce(function(t, x){ return t + Number(x.api_usd || 0); }, 0);
   const tot = s1 + s2 + gg || 1;
+
+  // THE STORY — the whole tab in five plain sentences, because the detail
+  // sections were reported as overwhelming. Every number here is the same
+  // recorded data the tables show; this is the translation, not a different
+  // source.
+  const gN = Number(m.guides || 0);
+  const avgG = gN ? Number(m.cost_guides || 0) / gN : 0;
+  const gLatest = (d.google || [])[0] || {};
+  const gPct = gLatest.pct_of_free != null ? Math.round(Number(gLatest.pct_of_free)) : null;
+  const freeUsd = Number(d.free_rebuilds.usd || 0);
+  const storyBits = [
+    "So far vacayi has spent <b>" + usd(m.cost_all_time) + "</b> making guides — <b>" +
+      usd(m.cost_30d) + "</b> of that in the last 30 days.",
+    "A guide costs about <b>" + usd4(avgG) + "</b> to build (" + num(gN) +
+      " built so far). The traveller pays in credits; the Per-guide tab shows which shapes make money.",
+    gPct == null
+      ? "Google usage has not been recorded yet this month."
+      : "Google is <b>" + gPct + "% of the way</b> through this month's free 1,000 Places calls" +
+        (gPct >= 80 ? " — getting close, every extra guide past it costs real Google money." :
+         " — comfortably inside the free tier."),
+    freeUsd > 0
+      ? "<b>" + usd(freeUsd) + "</b> of guides were given away as free quality rebuilds — the Waste tab lists them."
+      : "Nothing has been given away as free rebuilds.",
+    "The assistant has cost <b>" + usd(m.cost_assistant) + "</b> across " +
+      num(m.assistant_calls) + " priced calls.",
+  ];
+  $("#moStory").innerHTML = storyBits.map(function(t){
+    return '<p style="margin:0 0 10px;font-size:14px;line-height:1.6">' + t + "</p>";
+  }).join("");
   $("#split").innerHTML = [["Stage 1 · Gemini plans", s1, "var(--sunrise)"],
     ["Stage 2 · Claude writes", s2, "var(--flamingo)"],
     ["Google grounds", gg, "var(--violet)"]].map(function(x){
@@ -1756,9 +1907,16 @@ function stPatch(doc, patch, onFail){
 }
 
 // ---------------- TESTING ----------------
-const T_STATUSES = ["", "building", "testing", "done", "blocked"];
-const T_STATUS_LABEL = { "": "not started", building: "building", testing: "testing", done: "done", blocked: "blocked" };
+// The artifact sheet's own layout: collapsed rows that expand into the full
+// brief. Status vocabulary is the sheet's (building / built / failed); the
+// console's one earlier day of other values is MAPPED on read, never lost.
+const T_LEGACY = { done: "built", blocked: "failed", testing: "building" };
 function tKey(id, field){ return id + "_" + field; }
+function tStatus(id){
+  const raw = TSTATE[tKey(id, "status")] || "";
+  return T_LEGACY[raw] || raw;
+}
+const T_OPEN = {};
 function tChecksDone(id){
   let ok = 0, bad = 0;
   TDATA.CHECKS.forEach(function(c){
@@ -1767,6 +1925,10 @@ function tChecksDone(id){
   });
   return { ok: ok, bad: bad };
 }
+function tIssues(id){
+  return tChecksDone(id).bad > 0 || tStatus(id) === "failed" ||
+    !!(TSTATE[tKey(id, "note")] || "").trim();
+}
 async function loadTesting(){
   const r = await api("/api/state", { method: "POST", body: JSON.stringify({ key: "testing" }) });
   TSTATE = r.value || {};
@@ -1774,84 +1936,110 @@ async function loadTesting(){
 }
 function renderTesting(){
   const trips = TDATA.TRIPS;
-  const doneOf = function(who){
-    return trips.filter(function(t){ return (!who || t.who === who) && TSTATE[tKey(t.id, "status")] === "done"; }).length;
-  };
-  const of = function(who){ return trips.filter(function(t){ return t.who === who; }).length; };
-  const totDone = doneOf(null);
-  $("#tRings").innerHTML =
-    ringHtml(doneOf("Hugo") / Math.max(1, of("Hugo")), "var(--sunrise)", "H " + doneOf("Hugo") + "/" + of("Hugo")) +
-    ringHtml(doneOf("Edypo") / Math.max(1, of("Edypo")), "var(--good)", "E " + doneOf("Edypo") + "/" + of("Edypo"));
-  $("#tTotalBar").style.width = Math.round(100 * totDone / trips.length) + "%";
-  const xDone = TDATA.EXTRAS.filter(function(x){ return TSTATE[x[0]] === "ok"; }).length;
-  $("#tTotalLabel").textContent = totDone + " of " + trips.length + " guides done · " +
-    xDone + " of " + TDATA.EXTRAS.length + " extra checks passed";
+  const builtN = trips.filter(function(t){ return tStatus(t.id) === "built"; }).length;
+  const issueN = trips.filter(function(t){ return tIssues(t.id); }).length;
+  $("#tSumLabel").textContent = builtN + "/" + trips.length + " built · " + issueN + " issue" +
+    (issueN === 1 ? "" : "s");
+  $("#tTotalBar").style.width = Math.round(100 * builtN / trips.length) + "%";
 
-  const F = [["all", "All"], ["Hugo", "Hugo"], ["Edypo", "Edypo"], ["todo", "Not started"],
-    ["busy", "In progress"], ["issues", "Has issues"], ["done", "Done"]];
+  const F = [["Hugo", "Hugo"], ["Edypo", "Edypo"], ["all", "All"],
+    ["notbuilt", "Not built"], ["problems", "Problems"], ["built", "Built"]];
   $("#tFilters").innerHTML = F.map(function(f){
     return '<button class="fbtn ' + (T_FILTER === f[0] ? "on" : "") + '" data-tf="' + f[0] + '">' + f[1] + "</button>";
-  }).join("");
+  }).join("") + '<button class="btn grad tiny" id="tReport" style="border-radius:999px">📋 Report for Claude</button>';
   $$("#tFilters [data-tf]").forEach(function(b){
     b.onclick = function(){ T_FILTER = b.dataset.tf; renderTesting(); };
   });
+  $("#tFilters").querySelector("#tReport").onclick = tReport;
 
   const rows = trips.filter(function(t){
-    const st = TSTATE[tKey(t.id, "status")] || "";
-    const ch = tChecksDone(t.id);
+    const st = tStatus(t.id);
     if (T_FILTER === "Hugo" || T_FILTER === "Edypo") return t.who === T_FILTER;
-    if (T_FILTER === "todo") return !st;
-    if (T_FILTER === "busy") return st === "building" || st === "testing";
-    if (T_FILTER === "issues") return ch.bad > 0 || st === "blocked";
-    if (T_FILTER === "done") return st === "done";
+    if (T_FILTER === "notbuilt") return st !== "built";
+    if (T_FILTER === "problems") return tIssues(t.id);
+    if (T_FILTER === "built") return st === "built";
     return true;
   });
 
   $("#tCards").innerHTML = rows.map(function(t){
-    const st = TSTATE[tKey(t.id, "status")] || "";
+    const st = tStatus(t.id);
     const ch = tChecksDone(t.id);
-    const cls = st === "done" ? "done" : (st === "blocked" || ch.bad) ? "blocked" : "";
+    const open = !!T_OPEN[t.id];
+    const cls = (st === "built" && !ch.bad) ? "done" : (st === "failed" || ch.bad) ? "blocked" : "";
+    const fields = [
+      ["Where", esc(t.dest) + (t.from ? " · from " + esc(t.from) : "")],
+      ["When", esc(t.when) + " · " + esc(t.days)],
+      ["Type", esc(t.type) + (t.occ && t.occ !== "—" ? " · " + esc(t.occ) : "")],
+      ["Agent", esc(t.agent) + " · " + esc(t.pace) + " · " + esc(t.fun) + " · " + esc(t.budget)],
+      ["Language", esc(t.lang)],
+      ["Crew", esc(t.crew)],
+      ["First", t.first ? esc(t.first) : "—"],
+      ["Costs", t.cr + " credits"]
+    ].map(function(f){
+      return '<div class="fr"><span class="fk">' + f[0] + "</span><span>" + f[1] + "</span></div>";
+    }).join("");
     const checks = TDATA.CHECKS.map(function(c){
       const v = TSTATE[tKey(t.id, "c_" + c[0])] || "";
-      return '<span class="chk ' + v + '" data-tid="' + t.id + '" data-chk="' + c[0] +
-        '" title="' + esc(c[2]) + '">' + (v === "ok" ? "✓ " : v === "no" ? "✕ " : v === "na" ? "– " : "") +
-        esc(c[1]) + "</span>";
+      return '<div class="chkrow ' + v + '" data-tid="' + t.id + '" data-chk="' + c[0] + '">' +
+        '<span class="chkbox">' + (v === "ok" ? "✓" : v === "no" ? "✕" : v === "na" ? "–" : "") + "</span>" +
+        "<div><b>" + esc(c[1]) + '</b><div class="cd">' + esc(c[2]) + "</div></div></div>";
     }).join("");
-    return '<div class="tcard ' + cls + '">' +
-      '<div class="head"><span class="idchip">' + t.id + '</span>' +
-      '<span class="whochip ' + t.who.toLowerCase() + '">' + t.who + '</span>' +
-      '<span class="dest">' + esc(t.dest) + '</span>' +
-      '<span class="tiny" style="margin-left:auto">' + ch.ok + "/" + TDATA.CHECKS.length + '</span>' +
-      '<select data-tst="' + t.id + '" style="width:auto;padding:5px 9px;font-size:11.5px">' +
-      T_STATUSES.map(function(x){
-        return '<option value="' + x + '"' + (st === x ? " selected" : "") + ">" + T_STATUS_LABEL[x] + "</option>";
-      }).join("") + "</select></div>" +
-      '<div class="meta">' + esc(t.days) + " · " + esc(t.type) + (t.occ && t.occ !== "—" ? " · " + esc(t.occ) : "") +
-      " · " + esc(t.agent) + " · " + esc(t.pace) + "/" + esc(t.fun) + "/" + esc(t.budget) +
-      " · " + esc(t.lang) + " · " + esc(t.crew) + " · <b>" + t.cr + " cr</b>" +
-      (t.from ? " · from " + esc(t.from) : "") + "</div>" +
-      (t.first ? '<div class="meta">👉 <b>' + esc(t.first) + "</b></div>" : "") +
-      (t.ans && t.ans.length ? '<div class="meta">Step 3: ' + t.ans.map(esc).join(" · ") + "</div>" : "") +
-      '<div class="meta" style="color:var(--faint)">' + esc(t.why) + "</div>" +
-      '<div class="checks">' + checks + "</div>" +
-      '<div class="row" style="margin-top:9px">' +
-      '<input placeholder="guide id" value="' + esc(TSTATE[tKey(t.id, "gid")] || "") +
-      '" data-tgid="' + t.id + '" style="width:130px;padding:6px 9px;font-size:11.5px">' +
-      '<input placeholder="notes — what looked wrong, in your words" value="' + esc(TSTATE[tKey(t.id, "note")] || "") +
-      '" data-tnote="' + t.id + '" style="flex:1;min-width:160px;padding:6px 9px;font-size:11.5px"></div>' +
-      "</div>";
+    return '<div class="tcard ' + cls + (open ? " open" : "") + '">' +
+      '<div class="thead2" data-topen="' + t.id + '">' +
+      '<span class="idchip">' + t.id + '</span>' +
+      '<div style="flex:1;min-width:0"><div class="dest">' + esc(t.dest) + '</div>' +
+      '<div class="typechip">' + esc(t.type) + '</div>' +
+      '<div class="tiny">' + esc(t.who) + " · " + esc(t.when) + " · " + esc(t.agent) + "</div></div>" +
+      '<span class="stpill ' + st + '">' + (st === "built" ? "Built ✓" : st === "failed" ? "Failed" :
+        st === "building" ? "Building" : "Not started") + "</span>" +
+      '<span class="tiny">' + (open ? "▲" : "▼") + "</span></div>" +
+      '<div class="tbody2">' +
+      '<div class="fieldtbl">' + fields + "</div>" +
+      (t.ans && t.ans.length
+        ? '<div class="anshead">Answer step 3 exactly like this</div><ul class="anslist">' +
+          t.ans.map(function(x){ return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>"
+        : "") +
+      '<div class="whytest"><b>What this one is testing.</b> ' + esc(t.why) + "</div>" +
+      '<div class="frow"><span class="fk2">Status</span><div class="seg">' +
+      [["building", "Building"], ["built", "Built ✓"], ["failed", "Failed"]].map(function(x){
+        return '<button class="' + (st === x[0] ? "on" : "") + '" data-tst="' + t.id +
+          '" data-val="' + x[0] + '">' + x[1] + "</button>";
+      }).join("") + "</div></div>" +
+      '<div class="frow"><span class="fk2">Guide id</span>' +
+      '<input placeholder="first bit of the grey line at the bottom of the guide" value="' +
+      esc(TSTATE[tKey(t.id, "gid")] || "") + '" data-tgid="' + t.id +
+      '" style="flex:1;padding:8px 11px;font-size:12.5px"></div>' +
+      '<div class="frow"><span class="fk2">Stops on day 2</span>' +
+      '<input placeholder="?" value="' + esc(TSTATE[tKey(t.id, "stops")] || "") +
+      '" data-tstops="' + t.id + '" style="width:70px;padding:8px 11px;font-size:12.5px;text-align:center">' +
+      '<span class="tiny">just count them</span></div>' +
+      '<div style="margin-top:12px">' + checks + "</div>" +
+      '<div class="frow" style="align-items:flex-start"><span class="fk2" style="padding-top:8px">Notes</span>' +
+      '<textarea placeholder="anything the checks above have no room for" data-tnote="' + t.id +
+      '" style="flex:1;min-height:54px;font-size:12.5px">' + esc(TSTATE[tKey(t.id, "note")] || "") +
+      "</textarea></div>" +
+      "</div></div>";
   }).join("") || '<p class="muted">Nothing matches this filter.</p>';
 
-  $$("#tCards [data-tst]").forEach(function(sel){
-    sel.onchange = function(){
-      const k = tKey(sel.dataset.tst, "status");
-      const patch = {}; patch[k] = sel.value;
-      TSTATE[k] = sel.value;
+  // EXPAND on the header, never while selecting text in the body.
+  $$("#tCards [data-topen]").forEach(function(h){
+    h.onclick = function(){
+      const id = h.dataset.topen;
+      T_OPEN[id] = !T_OPEN[id];
+      renderTesting();
+    };
+  });
+  $$("#tCards [data-tst]").forEach(function(bt){
+    bt.onclick = function(){
+      const k = tKey(bt.dataset.tst, "status");
+      const val = bt.dataset.val === tStatus(bt.dataset.tst) ? "" : bt.dataset.val;
+      const patch = {}; patch[k] = val;
+      TSTATE[k] = val;
       stPatch("testing", patch);
       renderTesting();
     };
   });
-  $$("#tCards .chk").forEach(function(el){
+  $$("#tCards .chkrow").forEach(function(el){
     el.onclick = function(){
       const k = tKey(el.dataset.tid, "c_" + el.dataset.chk);
       const cur = TSTATE[k] || "";
@@ -1870,9 +2058,12 @@ function renderTesting(){
         TSTATE[k] = inp.value;
         stPatch("testing", patch);
       };
+      // Typing in the body must not toggle the card shut.
+      inp.onclick = function(e){ e.stopPropagation(); };
     });
   };
   blurSave("data-tgid", "gid");
+  blurSave("data-tstops", "stops");
   blurSave("data-tnote", "note");
 
   $("#xRows").innerHTML = TDATA.EXTRAS.map(function(x){
@@ -1895,6 +2086,115 @@ function renderTesting(){
     };
   });
 }
+
+// THE REPORT — every problem in one paste-ready block, so "come back to Claude
+// for fixes" is one button rather than a retype of everything you noticed.
+function tReport(){
+  const lines = ["vacayi guide-testing report — " + new Date().toISOString().slice(0, 10), ""];
+  let any = false;
+  TDATA.TRIPS.forEach(function(t){
+    const st = tStatus(t.id);
+    const bad = TDATA.CHECKS.filter(function(c){ return TSTATE[tKey(t.id, "c_" + c[0])] === "no"; });
+    const note = (TSTATE[tKey(t.id, "note")] || "").trim();
+    if (st !== "failed" && !bad.length && !note) return;
+    any = true;
+    lines.push(t.id + " — " + t.dest + " (" + t.who + ", " + t.type + ", " + t.agent + ")");
+    if (TSTATE[tKey(t.id, "gid")]) lines.push("  guide id: " + TSTATE[tKey(t.id, "gid")]);
+    if (st === "failed") lines.push("  BUILD FAILED");
+    if (TSTATE[tKey(t.id, "stops")]) lines.push("  stops on day 2: " + TSTATE[tKey(t.id, "stops")]);
+    bad.forEach(function(c){ lines.push("  FAILED CHECK: " + c[1] + " — " + c[2]); });
+    if (note) lines.push("  notes: " + note);
+    lines.push("");
+  });
+  TDATA.EXTRAS.forEach(function(x){
+    if (TSTATE[x[0]] === "no"){ any = true; lines.push("EXTRA FAILED: " + x[1] + " (" + x[2] + ")"); }
+  });
+  if (!any){ toast("Nothing to report — no failures or notes yet"); return; }
+  navigator.clipboard.writeText(lines.join("\n")).then(
+    function(){ toast("Report copied — paste it to Claude"); },
+    function(){ toast("Copy failed", true); });
+}
+
+// ---------------- DEBUGGING ----------------
+// The quick-capture list. One line per item, shared through the same state
+// machinery as the trackers (key "debug", one flat doc; each item is its own
+// top-level key so the shallow merge keeps concurrent adds).
+let DSTATE = {};
+async function loadDebug(){
+  const r = await api("/api/state", { method: "POST", body: JSON.stringify({ key: "debug" }) });
+  DSTATE = r.value || {};
+  renderDebug();
+}
+function dbgItems(){
+  return Object.entries(DSTATE)
+    .filter(function(e){ return e[1] && typeof e[1] === "object" && e[1].t; })
+    .map(function(e){ return { k: e[0], t: e[1].t, s: e[1].s || "open", at: e[1].at || "", by: e[1].by || "" }; })
+    .sort(function(a, b){ return String(b.at).localeCompare(String(a.at)); });
+}
+function renderDebug(){
+  const items = dbgItems();
+  const open = items.filter(function(i){ return i.s === "open"; });
+  $("#dbgCount").textContent = open.length + " open · " + (items.length - open.length) + " fixed";
+  const navN = $("#navDebugN");
+  navN.textContent = String(open.length || "");
+  navN.classList.toggle("hide", !open.length);
+  $("#dbgRows").innerHTML = items.map(function(i){
+    return '<div class="dbgrow ' + (i.s === "fixed" ? "fixed" : "") + '">' +
+      '<span class="dt">' + esc(i.t) + (i.by ? ' <span class="tiny">— ' + esc(i.by) + "</span>" : "") + "</span>" +
+      '<span class="when">' + (i.at ? ago(i.at) : "") + "</span>" +
+      '<button class="btn ghost tiny" data-dfix="' + i.k + '">' + (i.s === "fixed" ? "Reopen" : "✓ Fixed") + "</button>" +
+      '<button class="btn ghost tiny" data-ddel="' + i.k + '">✕</button></div>';
+  }).join("") || '<p class="muted" style="margin:0">Nothing logged. When something looks wrong anywhere, drop one line here.</p>';
+  $$("#dbgRows [data-dfix]").forEach(function(b){
+    b.onclick = function(){
+      const k = b.dataset.dfix;
+      const it = DSTATE[k];
+      const next = Object.assign({}, it, { s: it.s === "fixed" ? "open" : "fixed" });
+      const patch = {}; patch[k] = next;
+      DSTATE[k] = next;
+      stPatch("debug", patch);
+      renderDebug();
+    };
+  });
+  $$("#dbgRows [data-ddel]").forEach(function(b){
+    b.onclick = function(){
+      if (!confirm("Delete this item for both of you?")) return;
+      const k = b.dataset.ddel;
+      // A null value through the merge REMOVES nothing (jsonb || keeps the
+      // key), so deletion is a tombstone the renderer skips.
+      const patch = {}; patch[k] = { t: "", s: "deleted" };
+      DSTATE[k] = patch[k];
+      stPatch("debug", patch);
+      renderDebug();
+    };
+  });
+}
+function dbgAdd(){
+  const t = $("#dbgIn").value.trim();
+  if (!t){ toast("Type what looked wrong first", true); return; }
+  const k = "d" + Date.now();
+  const val = { t: t.slice(0, 300), s: "open", at: new Date().toISOString(),
+    by: ($("#who").textContent || "").split("@")[0] };
+  const patch = {}; patch[k] = val;
+  DSTATE[k] = val;
+  stPatch("debug", patch);
+  $("#dbgIn").value = "";
+  renderDebug();
+}
+$("#dbgAdd").onclick = dbgAdd;
+$("#dbgIn").onkeydown = function(e){ if (e.key === "Enter") dbgAdd(); };
+$("#dbgReport").onclick = function(){
+  const open = dbgItems().filter(function(i){ return i.s === "open"; });
+  if (!open.length){ toast("Nothing open to report"); return; }
+  const lines = ["vacayi debug list — " + new Date().toISOString().slice(0, 10),
+    "Fix these, in order. Each is one observed problem in the app or a guide:", ""];
+  open.forEach(function(i, n){
+    lines.push((n + 1) + ". " + i.t + (i.by ? "  (reported by " + i.by + ")" : ""));
+  });
+  navigator.clipboard.writeText(lines.join("\n")).then(
+    function(){ toast("Report copied — paste it to Claude"); },
+    function(){ toast("Copy failed", true); });
+};
 
 // ---------------- ROADMAP ----------------
 function rDone(id){ return !!RSTATE["done_" + id]; }
@@ -1996,6 +2296,7 @@ const LOADERS = {
   ailab: loadAilab,
   users: loadUsers,
   testing: loadTesting,
+  debug: loadDebug,
   roadmap: loadRoadmap
 };
 
