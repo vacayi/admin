@@ -240,6 +240,10 @@
   .dbgrow.fixed .dt{text-decoration:line-through}
   .dbgrow .dt{font-size:13.5px;flex:1}
   .dbgrow .when{color:var(--faint);font-size:11px;white-space:nowrap;padding-top:2px}
+  .dkind{flex:none;font:800 9.5px/1 inherit;letter-spacing:.8px;text-transform:uppercase;
+        border-radius:6px;padding:5px 6px;margin-top:1px}
+  .dkind.bug{background:var(--badbg);color:var(--bad)}
+  .dkind.idea{background:var(--warnbg);color:var(--warn)}
 
   /* ---------- testing + roadmap widgets ---------- */
   .tcard{background:var(--card);border:1px solid var(--line);border-radius:14px;
@@ -779,22 +783,27 @@
 <!-- ============================= DEBUGGING ============================= -->
 <div id="v-debug" class="view hide">
   <div class="card">
-    <h3>Spotted something broken? <span class="tag">ten seconds, no forms</span></h3>
-    <p class="blurb">One line, in your own words — where you were and what looked wrong.
-      That is all Claude needs to start; everything else is in the databases. Shared
-      between the two of you, instantly.</p>
+    <h3>Write it down before you lose it <span class="tag">ten seconds, no forms</span></h3>
+    <p class="blurb">Two lists, one box. A <b>bug</b> is something you watched go wrong; an
+      <b>idea</b> is something you want changed or added. One line in your own words is enough
+      — everything else is already in the databases. Shared between the two of you, instantly.</p>
+    <div class="seg" style="margin-bottom:10px">
+      <button class="on" data-dkind="bug">🐞 Bug · something is broken</button>
+      <button data-dkind="idea">💡 Idea · something to change</button>
+    </div>
     <div class="row">
-      <input id="dbgIn" placeholder="e.g. Iceland guide — day 3 map draws through the ocean"
+      <input id="dbgIn" placeholder="e.g. Iceland guide — day 3 map draws a line through the ocean"
         style="flex:1;min-width:200px">
       <button class="btn grad" id="dbgAdd">Add</button>
     </div>
   </div>
 
   <div class="card">
-    <div class="row" style="margin-bottom:6px">
+    <div class="row" style="margin-bottom:10px">
       <h3 style="margin:0;flex:1">The list <span class="tag" id="dbgCount"></span></h3>
       <button class="btn grad tiny" id="dbgReport">📋 Copy report for Claude</button>
     </div>
+    <div class="filterrow" id="dbgFilters"></div>
     <div id="dbgRows"></div>
   </div>
 </div>
@@ -2116,10 +2125,19 @@ function tReport(){
 }
 
 // ---------------- DEBUGGING ----------------
-// The quick-capture list. One line per item, shared through the same state
-// machinery as the trackers (key "debug", one flat doc; each item is its own
-// top-level key so the shallow merge keeps concurrent adds).
+// The quick-capture list. TWO KINDS, ONE MACHINERY: a bug is something that
+// went wrong, an idea is something we want changed. Same row, same state doc
+// (key "debug", one flat doc, each item its own top-level key so the shallow
+// merge keeps concurrent adds), same tombstone. The kind changes exactly two
+// things, and both are deliberate: what the nav badge counts, and how the
+// report hands them over.
 let DSTATE = {};
+let DKIND = "bug";     // what the Add box will file
+let DFILTER = "open";  // what the list is showing
+const DPLACE = {
+  bug: "e.g. Iceland guide — day 3 map draws a line through the ocean",
+  idea: "e.g. let me drag the stops on a day to reorder them"
+};
 async function loadDebug(){
   const r = await api("/api/state", { method: "POST", body: JSON.stringify({ key: "debug" }) });
   DSTATE = r.value || {};
@@ -2128,23 +2146,64 @@ async function loadDebug(){
 function dbgItems(){
   return Object.entries(DSTATE)
     .filter(function(e){ return e[1] && typeof e[1] === "object" && e[1].t; })
-    .map(function(e){ return { k: e[0], t: e[1].t, s: e[1].s || "open", at: e[1].at || "", by: e[1].by || "" }; })
+    .map(function(e){
+      return { k: e[0], t: e[1].t, s: e[1].s || "open", at: e[1].at || "", by: e[1].by || "",
+        // ABSENT MEANS BUG. Everything logged before ideas existed was a fault
+        // report, because a fault report is all this tab could take.
+        kind: e[1].kind === "idea" ? "idea" : "bug" };
+    })
     .sort(function(a, b){ return String(b.at).localeCompare(String(a.at)); });
 }
 function renderDebug(){
   const items = dbgItems();
-  const open = items.filter(function(i){ return i.s === "open"; });
-  $("#dbgCount").textContent = open.length + " open · " + (items.length - open.length) + " fixed";
+  const openBugs = items.filter(function(i){ return i.s === "open" && i.kind === "bug"; });
+  const openIdeas = items.filter(function(i){ return i.s === "open" && i.kind === "idea"; });
+  const done = items.length - openBugs.length - openIdeas.length;
+  // NAME EACH NUMBER. "2 open" sat directly above a chip reading "Open · 3" —
+  // the same word answering differently, which is how a panel stops being read.
+  const nOf = function(n, one, many){ return n + " " + (n === 1 ? one : many); };
+  $("#dbgCount").textContent = nOf(openBugs.length, "open bug", "open bugs") + " · "
+    + nOf(openIdeas.length, "idea", "ideas") + " · " + done + " done";
+
+  // THE BADGE COUNTS BUGS ONLY. An idea list is meant to grow, so a badge that
+  // sits red because twelve good ideas are in it is a badge you stop reading —
+  // and it takes the count of actually-broken things down with it.
   const navN = $("#navDebugN");
-  navN.textContent = String(open.length || "");
-  navN.classList.toggle("hide", !open.length);
-  $("#dbgRows").innerHTML = items.map(function(i){
-    return '<div class="dbgrow ' + (i.s === "fixed" ? "fixed" : "") + '">' +
+  navN.textContent = String(openBugs.length || "");
+  navN.classList.toggle("hide", !openBugs.length);
+
+  const F = [["open", "Open · " + (openBugs.length + openIdeas.length)],
+    ["bug", "🐞 Bugs · " + openBugs.length],
+    ["idea", "💡 Ideas · " + openIdeas.length],
+    ["done", "Done · " + done],
+    ["all", "Everything"]];
+  $("#dbgFilters").innerHTML = F.map(function(f){
+    return '<button class="fbtn ' + (DFILTER === f[0] ? "on" : "") + '" data-df="' + f[0] + '">' + f[1] + "</button>";
+  }).join("");
+  $$("#dbgFilters [data-df]").forEach(function(b){
+    b.onclick = function(){ DFILTER = b.dataset.df; renderDebug(); };
+  });
+
+  const rows = items.filter(function(i){
+    if (DFILTER === "all") return true;
+    if (DFILTER === "done") return i.s !== "open";
+    if (i.s !== "open") return false;
+    return DFILTER === "open" ? true : i.kind === DFILTER;
+  });
+  $("#dbgRows").innerHTML = rows.map(function(i){
+    // A struck-through "Fixed" over "let me reorder a day" reads as a bug that
+    // was never there. An idea gets DONE.
+    const act = i.s !== "open" ? "Reopen" : (i.kind === "idea" ? "✓ Done" : "✓ Fixed");
+    return '<div class="dbgrow ' + (i.s !== "open" ? "fixed" : "") + '">' +
+      '<span class="dkind ' + i.kind + '">' + (i.kind === "idea" ? "idea" : "bug") + "</span>" +
       '<span class="dt">' + esc(i.t) + (i.by ? ' <span class="tiny">— ' + esc(i.by) + "</span>" : "") + "</span>" +
       '<span class="when">' + (i.at ? ago(i.at) : "") + "</span>" +
-      '<button class="btn ghost tiny" data-dfix="' + i.k + '">' + (i.s === "fixed" ? "Reopen" : "✓ Fixed") + "</button>" +
+      '<button class="btn ghost tiny" data-dfix="' + i.k + '">' + act + "</button>" +
       '<button class="btn ghost tiny" data-ddel="' + i.k + '">✕</button></div>';
-  }).join("") || '<p class="muted" style="margin:0">Nothing logged. When something looks wrong anywhere, drop one line here.</p>';
+  }).join("") || '<p class="muted" style="margin:0">' + (items.length
+    ? "Nothing under that filter."
+    : "Nothing logged yet. A bug is something you watched go wrong; an idea is something you want changed.")
+    + "</p>";
   $$("#dbgRows [data-dfix]").forEach(function(b){
     b.onclick = function(){
       const k = b.dataset.dfix;
@@ -2171,26 +2230,51 @@ function renderDebug(){
 }
 function dbgAdd(){
   const t = $("#dbgIn").value.trim();
-  if (!t){ toast("Type what looked wrong first", true); return; }
+  if (!t){ toast(DKIND === "idea" ? "Type the idea first" : "Type what looked wrong first", true); return; }
   const k = "d" + Date.now();
-  const val = { t: t.slice(0, 300), s: "open", at: new Date().toISOString(),
+  const val = { t: t.slice(0, 300), s: "open", kind: DKIND, at: new Date().toISOString(),
     by: ($("#who").textContent || "").split("@")[0] };
   const patch = {}; patch[k] = val;
   DSTATE[k] = val;
   stPatch("debug", patch);
   $("#dbgIn").value = "";
+  // Filing an idea while the Bugs filter is up would swallow the line that was
+  // just typed. Follow the box rather than leave them hunting for it.
+  if (DFILTER !== "open" && DFILTER !== "all" && DFILTER !== DKIND) DFILTER = DKIND;
   renderDebug();
 }
 $("#dbgAdd").onclick = dbgAdd;
 $("#dbgIn").onkeydown = function(e){ if (e.key === "Enter") dbgAdd(); };
+$$("[data-dkind]").forEach(function(b){
+  b.onclick = function(){
+    DKIND = b.dataset.dkind;
+    $$("[data-dkind]").forEach(function(x){ x.classList.toggle("on", x === b); });
+    $("#dbgIn").placeholder = DPLACE[DKIND];
+    $("#dbgIn").focus();
+  };
+});
 $("#dbgReport").onclick = function(){
   const open = dbgItems().filter(function(i){ return i.s === "open"; });
   if (!open.length){ toast("Nothing open to report"); return; }
-  const lines = ["vacayi debug list — " + new Date().toISOString().slice(0, 10),
-    "Fix these, in order. Each is one observed problem in the app or a guide:", ""];
-  open.forEach(function(i, n){
-    lines.push((n + 1) + ". " + i.t + (i.by ? "  (reported by " + i.by + ")" : ""));
-  });
+  const bugs = open.filter(function(i){ return i.kind === "bug"; });
+  const ideas = open.filter(function(i){ return i.kind === "idea"; });
+  const lines = ["vacayi debug list — " + new Date().toISOString().slice(0, 10)];
+  if (bugs.length){
+    lines.push("", "BUGS — each is one observed problem in the app or a guide. Fix these, in order:", "");
+    bugs.forEach(function(i, n){
+      lines.push((n + 1) + ". " + i.t + (i.by ? "  (reported by " + i.by + ")" : ""));
+    });
+  }
+  // KEPT APART ON PURPOSE. An idea handed over inside a bug list gets "fixed":
+  // whoever reads it goes hunting for a fault that was never there, and comes
+  // back with a diagnosis instead of a plan.
+  if (ideas.length){
+    lines.push("", "IDEAS — nothing in this section is broken. These are changes we want. " +
+      "For each, say what it would cost and what it would break before building any of it:", "");
+    ideas.forEach(function(i, n){
+      lines.push((n + 1) + ". " + i.t + (i.by ? "  (from " + i.by + ")" : ""));
+    });
+  }
   navigator.clipboard.writeText(lines.join("\n")).then(
     function(){ toast("Report copied — paste it to Claude"); },
     function(){ toast("Copy failed", true); });
