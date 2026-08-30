@@ -531,15 +531,16 @@
 
   <div class="sec" id="sup-photos">
     <div class="card">
-      <h3>Flagged photos <span class="tag">reported by a crew member</span></h3>
-      <p class="blurb">Somebody in a trip's crew tapped <b>Report</b> on a shared photo. It is
-        already hidden for them; everyone else still sees it until you decide. <b>The Terms
-        promise a decision within 24 hours</b>, so the oldest is at the top and turns red once
-        it is close. This is the only place in this console that shows a traveller's photo, and
-        only reported ones ever appear here — nothing can list an album.</p>
-      <p class="blurb"><b>Remove</b> deletes it for everyone, permanently, and cannot be undone.
-        <b>Keep</b> means the report was wrong: it leaves the queue, the person who reported it
-        still has it hidden, and anyone else can still report it.</p>
+      <h3>Flagged photos <span class="tag">a window — nothing here waits on you</span></h3>
+      <p class="blurb"><b>Reports resolve themselves.</b> A report hides the photo for the
+        reporter at once and notifies the trip's owner, who can keep it or remove it — they
+        know the people in it, you don't. A <b>second report removes it instantly</b>, and
+        anything still reported after <b>24 hours is removed automatically</b>. You never have
+        to act here; each row shows how long it has left. This is still the only place in the
+        console that shows a traveller's photo, and only reported ones ever appear —
+        nothing can list an album.</p>
+      <p class="blurb">The buttons work if you ever want to step in early: <b>Remove</b>
+        deletes it for everyone now; <b>Keep</b> clears the report the way the owner would.</p>
       <div id="flagRows"></div>
     </div>
   </div>
@@ -1202,15 +1203,9 @@ function svgDonut(pairs){
 async function loadOverview(){
   const r = await Promise.all([
     api("/api/stats"), api("/api/support"), api("/api/guide-quality"),
-    api("/api/credits"), api("/api/complaints"),
-    // NEVER let this one take the dashboard down with it: Promise.all rejects
-    // as a unit, so an older deployed function 404ing here would blank the
-    // whole Overview. An empty queue reads exactly like no reports, which is
-    // the true state almost all of the time.
-    api("/api/photo-reports").catch(function(){ return []; })
+    api("/api/credits"), api("/api/complaints")
   ]);
   const st = r[0], sup = r[1], q = r[2], cr = r[3], comp = r[4];
-  const flagged = Array.isArray(r[5]) ? r[5] : [];
 
   const okPct = st.last7d.n ? Math.round(100 * st.last7d.ok_n / st.last7d.n) : null;
   const lastRun = (st.recent_runs || [])[0];
@@ -1226,14 +1221,14 @@ async function loadOverview(){
     kpi(q.kpis.clean_pct == null ? "—" : q.kpis.clean_pct + "%", "Clean guides",
       "zero hard failures, all versions", q.kpis.clean_pct != null && q.kpis.clean_pct < 50 ? "warn" : "");
 
-  // THE BADGE COUNTS EVERYONE WAITING ON US — tickets and reported photos
-  // alike. A photo carries a 24-hour promise in the Terms, so filing it
-  // behind a sub-tab with nothing on the shell to say so defeats it. The
-  // breakdown is one tap in, on the sub-tab's own count.
-  const waiting = (sup.open || 0) + flagged.length;
+  // THE BADGE COUNTS TICKETS ONLY. Reported photos stopped being work the
+  // day they became self-governing (0130): removal is automatic at two
+  // reports or 24 hours, and the KEEP decision belongs to the trip's owner,
+  // who is notified — so a number here would be a chore that resolves
+  // itself, which is exactly the kind of badge people learn to ignore.
   const navN = $("#navSupportN");
-  navN.textContent = String(waiting || "");
-  navN.classList.toggle("hide", !waiting);
+  navN.textContent = String(sup.open || "");
+  navN.classList.toggle("hide", !sup.open);
 
   // Trend: /api/credits days carries guides + cost per day (already joined).
   const days = (cr.days || []).slice(0, 30).reverse().map(function(d){
@@ -1269,8 +1264,6 @@ async function loadOverview(){
   const att = [];
   if (st.queue_depth > 0) att.push(['⏳', num(st.queue_depth) + " job(s) in the generation queue", "money", "#mo-ops"]);
   if (sup.open > 0) att.push(['🛟', num(sup.open) + " open support ticket(s)", "support", "#sup-queue"]);
-  if (flagged.length) att.push(['🚩', flagged.length + " reported photo(s) — the Terms promise a decision in 24h",
-    "support", "#sup-photos"]);
   const stuckN = (cr.stuck || []).length;
   if (stuckN) att.push(['🧊', stuckN + " stuck credit hold(s) — someone's credits are in limbo", "support", "#sup-holds"]);
   if (comp.high > 0) att.push(['🗣', comp.high + " high-confidence complaint(s) in the assistant", "ailab", "#ai-complaints"]);
@@ -2178,21 +2171,21 @@ function renderFlagged(rows){
   }
   $("#flagRows").innerHTML = rows.map(function(r){
     const hrs = r.reported_at ? Math.floor((Date.now() - new Date(r.reported_at).getTime()) / 36e5) : 0;
-    // Red from 18 hours: the promise is 24, and a queue that only warns you at
-    // the deadline has already spent it.
-    const late = hrs >= 18;
+    const left = Math.max(0, 24 - hrs);
+    const late = left <= 0;
     return '<div class="flagrow" data-fid="' + esc(r.id) + '">' +
       (r.thumb ? '<img class="flagsh" src="' + esc(r.thumb) + '" alt="">' : '<div class="flagsh"></div>') +
       '<div class="flagmeta"><b>' + esc(r.trip_title || "a trip") + "</b>" +
       '<div class="muted">Day ' + esc(String(r.day || "?")) + " · " + esc(r.stop_key || "no stop") + "</div>" +
       '<div class="muted">shared by ' + esc(r.uploader_name || r.uploader_id || "someone") + " · " +
       r.reports + " report" + (r.reports === 1 ? "" : "s") + "</div>" +
-      '<div class="' + (late ? "flagage" : "flagage ok") + '">waiting ' + hrs + "h" +
-      (late ? " — the Terms promise 24h" : "") + "</div></div>" +
+      '<div class="' + (late ? "flagage" : "flagage ok") + '">' +
+      (late ? "removal due — the sweep runs every 15 min" : "auto-removes in about " + left + "h") +
+      "</div></div>" +
       '<div style="display:flex;flex-direction:column;gap:6px">' +
       '<button class="btn ghost tiny" data-fkeep="' + esc(r.id) + '">Keep</button>' +
       '<button class="btn ghost tiny" data-frm="' + esc(r.id) + '">Remove</button></div></div>';
-  }).join("") || '<p class="muted" style="margin:0">Nothing reported. This queue is empty almost all of the time, which is the point of it.</p>';
+  }).join("") || '<p class="muted" style="margin:0">Nothing reported. Empty is the normal state here — and when something does land, it resolves itself.</p>';
 
   $$("#flagRows [data-fkeep]").forEach(function(b){
     b.onclick = function(){ photoAct(b.dataset.fkeep, "keep"); };
