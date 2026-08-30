@@ -233,6 +233,17 @@
   .chkrow b{font-size:13.5px}
   .chkrow .cd{color:var(--soft);font-size:12px;margin-top:1px}
 
+  /* ---------- flagged photos ---------- */
+  .flagrow{display:flex;gap:12px;align-items:flex-start;padding:12px 0;
+        border-bottom:1px solid var(--line)}
+  .flagrow:last-child{border-bottom:0}
+  .flagsh{width:74px;height:74px;flex:none;border-radius:10px;object-fit:cover;
+        background:var(--mist);border:1px solid var(--line)}
+  .flagmeta{flex:1;min-width:0;font-size:12.5px}
+  .flagmeta b{font-size:13.5px}
+  .flagage{color:var(--bad);font-weight:800;font-size:11px}
+  .flagage.ok{color:var(--soft);font-weight:700}
+
   /* ---------- debugging tab ---------- */
   .dbgrow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;
         border-bottom:1px solid var(--line)}
@@ -468,6 +479,7 @@
     <button data-sec="sup-credits">Credit tools</button>
     <button data-sec="sup-holds">Stuck holds</button>
     <button data-sec="sup-trip">Trip lookup</button>
+    <button data-sec="sup-photos">Flagged photos <span id="supPhotoN"></span></button>
   </div>
 
   <div class="sec on" id="sup-queue">
@@ -517,6 +529,20 @@
     </div>
   </div>
 
+  <div class="sec" id="sup-photos">
+    <div class="card">
+      <h3>Flagged photos <span class="tag">reported by a crew member</span></h3>
+      <p class="blurb">Somebody in a trip's crew tapped <b>Report</b> on a shared photo. It is
+        already hidden for them; everyone else still sees it until you decide. <b>The Terms
+        promise a decision within 24 hours</b>, so the oldest is at the top and turns red once
+        it is close. This is the only place in this console that shows a traveller's photo, and
+        only reported ones ever appear here — nothing can list an album.</p>
+      <p class="blurb"><b>Remove</b> deletes it for everyone, permanently, and cannot be undone.
+        <b>Keep</b> means the report was wrong: it leaves the queue, the person who reported it
+        still has it hidden, and anyone else can still report it.</p>
+      <div id="flagRows"></div>
+    </div>
+  </div>
   <div class="sec" id="sup-trip">
     <div class="card">
       <h3>Trip lookup <span class="tag">"I was charged twice for Rome"</span></h3>
@@ -1176,9 +1202,15 @@ function svgDonut(pairs){
 async function loadOverview(){
   const r = await Promise.all([
     api("/api/stats"), api("/api/support"), api("/api/guide-quality"),
-    api("/api/credits"), api("/api/complaints")
+    api("/api/credits"), api("/api/complaints"),
+    // NEVER let this one take the dashboard down with it: Promise.all rejects
+    // as a unit, so an older deployed function 404ing here would blank the
+    // whole Overview. An empty queue reads exactly like no reports, which is
+    // the true state almost all of the time.
+    api("/api/photo-reports").catch(function(){ return []; })
   ]);
   const st = r[0], sup = r[1], q = r[2], cr = r[3], comp = r[4];
+  const flagged = Array.isArray(r[5]) ? r[5] : [];
 
   const okPct = st.last7d.n ? Math.round(100 * st.last7d.ok_n / st.last7d.n) : null;
   const lastRun = (st.recent_runs || [])[0];
@@ -1194,9 +1226,14 @@ async function loadOverview(){
     kpi(q.kpis.clean_pct == null ? "—" : q.kpis.clean_pct + "%", "Clean guides",
       "zero hard failures, all versions", q.kpis.clean_pct != null && q.kpis.clean_pct < 50 ? "warn" : "");
 
+  // THE BADGE COUNTS EVERYONE WAITING ON US — tickets and reported photos
+  // alike. A photo carries a 24-hour promise in the Terms, so filing it
+  // behind a sub-tab with nothing on the shell to say so defeats it. The
+  // breakdown is one tap in, on the sub-tab's own count.
+  const waiting = (sup.open || 0) + flagged.length;
   const navN = $("#navSupportN");
-  navN.textContent = String(sup.open || "");
-  navN.classList.toggle("hide", !sup.open);
+  navN.textContent = String(waiting || "");
+  navN.classList.toggle("hide", !waiting);
 
   // Trend: /api/credits days carries guides + cost per day (already joined).
   const days = (cr.days || []).slice(0, 30).reverse().map(function(d){
@@ -1232,6 +1269,8 @@ async function loadOverview(){
   const att = [];
   if (st.queue_depth > 0) att.push(['⏳', num(st.queue_depth) + " job(s) in the generation queue", "money", "#mo-ops"]);
   if (sup.open > 0) att.push(['🛟', num(sup.open) + " open support ticket(s)", "support", "#sup-queue"]);
+  if (flagged.length) att.push(['🚩', flagged.length + " reported photo(s) — the Terms promise a decision in 24h",
+    "support", "#sup-photos"]);
   const stuckN = (cr.stuck || []).length;
   if (stuckN) att.push(['🧊', stuckN + " stuck credit hold(s) — someone's credits are in limbo", "support", "#sup-holds"]);
   if (comp.high > 0) att.push(['🗣', comp.high + " high-confidence complaint(s) in the assistant", "ailab", "#ai-complaints"]);
@@ -1278,8 +1317,10 @@ function rosterLoad(){
   });
 }
 async function loadSupport(){
-  const r = await Promise.all([api("/api/support"), api("/api/credits"), rosterLoad()]);
+  const r = await Promise.all([api("/api/support"), api("/api/credits"), rosterLoad(),
+    api("/api/photo-reports").catch(function(){ return []; })]);
   const sup = r[0], cr = r[1];
+  renderFlagged(Array.isArray(r[3]) ? r[3] : []);
 
   const kinds = Object.entries(sup.byKind || {}).map(function(e){ return esc(e[0]) + " " + e[1]; }).join(" · ");
   $("#supKpis").innerHTML =
@@ -2122,6 +2163,58 @@ function tReport(){
   navigator.clipboard.writeText(lines.join("\n")).then(
     function(){ toast("Report copied — paste it to Claude"); },
     function(){ toast("Copy failed", true); });
+}
+
+
+// ---------------- FLAGGED PHOTOS ----------------
+// Reviewing a report is a two-button decision, so the row carries exactly what
+// the decision turns on: the picture, where it sits, who shared it, how many
+// people reported it, and how long it has been waiting.
+function renderFlagged(rows){
+  const n = $("#supPhotoN");
+  if (n){
+    n.textContent = rows.length ? " · " + rows.length : "";
+    n.className = rows.length ? "n" : "";
+  }
+  $("#flagRows").innerHTML = rows.map(function(r){
+    const hrs = r.reported_at ? Math.floor((Date.now() - new Date(r.reported_at).getTime()) / 36e5) : 0;
+    // Red from 18 hours: the promise is 24, and a queue that only warns you at
+    // the deadline has already spent it.
+    const late = hrs >= 18;
+    return '<div class="flagrow" data-fid="' + esc(r.id) + '">' +
+      (r.thumb ? '<img class="flagsh" src="' + esc(r.thumb) + '" alt="">' : '<div class="flagsh"></div>') +
+      '<div class="flagmeta"><b>' + esc(r.trip_title || "a trip") + "</b>" +
+      '<div class="muted">Day ' + esc(String(r.day || "?")) + " · " + esc(r.stop_key || "no stop") + "</div>" +
+      '<div class="muted">shared by ' + esc(r.uploader_name || r.uploader_id || "someone") + " · " +
+      r.reports + " report" + (r.reports === 1 ? "" : "s") + "</div>" +
+      '<div class="' + (late ? "flagage" : "flagage ok") + '">waiting ' + hrs + "h" +
+      (late ? " — the Terms promise 24h" : "") + "</div></div>" +
+      '<div style="display:flex;flex-direction:column;gap:6px">' +
+      '<button class="btn ghost tiny" data-fkeep="' + esc(r.id) + '">Keep</button>' +
+      '<button class="btn ghost tiny" data-frm="' + esc(r.id) + '">Remove</button></div></div>';
+  }).join("") || '<p class="muted" style="margin:0">Nothing reported. This queue is empty almost all of the time, which is the point of it.</p>';
+
+  $$("#flagRows [data-fkeep]").forEach(function(b){
+    b.onclick = function(){ photoAct(b.dataset.fkeep, "keep"); };
+  });
+  $$("#flagRows [data-frm]").forEach(function(b){
+    b.onclick = function(){
+      // REMOVE IS PERMANENT AND IT IS SOMEBODY'S PHOTOGRAPH. The confirm names
+      // both facts rather than asking "are you sure".
+      if (!confirm("Delete this photo for everyone on the trip? It cannot be undone.")) return;
+      photoAct(b.dataset.frm, "remove");
+    };
+  });
+}
+async function photoAct(id, action){
+  try {
+    const r = await api("/api/photo-action", { method: "POST", body: JSON.stringify({ id: id, action: action }) });
+    if (r && r.error){ toast(r.error, true); return; }
+    toast(action === "remove" ? "Removed for everyone" : "Kept — flag cleared");
+    loadSupport();
+  } catch (e) {
+    toast("Could not do that — " + (e && e.message ? e.message : "try again"), true);
+  }
 }
 
 // ---------------- DEBUGGING ----------------
