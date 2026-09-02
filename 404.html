@@ -2204,6 +2204,23 @@ function tReport(){
 // ids a fix needs, so the handoff is a paste rather than a retype, and the
 // runbook in docs/guide-issue-loop.md says what happens next.
 const RSTATUS = { open: 'Received', answered: 'Fixed', closed: 'Closed' };
+// The worker's own measurement of a reported guide, shown where the person
+// acting on the report is already looking. Three states, and "not yet" is one
+// of them on purpose: the triage sweep runs every few minutes, so a report that
+// has just landed legitimately has no measurement, and that must not read as a
+// broken one.
+function triageLine(t){
+  if (!t) return '<div class="tiny muted" style="margin:0 0 6px">Not measured yet — the worker triages within about five minutes.</div>';
+  if (t.unmeasured) return '<div class="tiny" style="margin:0 0 6px">Could not measure: ' + esc(String(t.unmeasured)) + '</div>';
+  const hard = (t.flags || []).filter(function(f){ return f.severity === 'hard'; });
+  const fixed = t.healed && (t.heal_rules || []).length
+    ? 'auto-fixed ' + esc((t.heal_rules || []).join(', ')) + ' (now v' + esc(String(t.version)) + ')'
+    : 'nothing auto-fixable';
+  return '<div class="tiny" style="margin:0 0 6px">Measured ' + ago(t.at) + ' · score ' + esc(String(t.score)) +
+    ' · ' + hard.length + ' hard, ' + (t.soft || 0) + ' soft · ' + fixed +
+    (hard.length ? '<br>still failing: ' + esc(hard.map(function(f){ return f.id; }).join(', ')) : '') + '</div>';
+}
+
 function renderReports(rows){
   const items = (rows || []).filter(function(x){ return x.kind === 'guide_issue'; });
   const n = $('#supReportN');
@@ -2220,6 +2237,11 @@ function renderReports(rows){
       '<code>' + esc(String(tid).slice(0, 8)) + '</code>' +
       '<span class="tiny">' + esc(t0.display_name || t0.reply_to || '') + '</span>' +
       '<button class="btn ghost tiny" data-rcopy="' + esc(tid) + '" style="margin-left:auto">Copy for Claude</button></div>';
+    // WHAT THE WORKER ALREADY MEASURED. The triage sweep heals the reported
+    // guide and scores what is left within minutes of the report landing, and
+    // writes it here. Showing it is the whole point: a measurement computed and
+    // displayed to nobody is the saved_places failure again.
+    const head2 = triageLine(t0.diagnostics && t0.diagnostics.triage);
     const body = list.map(function(x){
       const next = x.status === 'open' ? 'answered' : x.status === 'answered' ? 'closed' : 'open';
       const pill = x.status === 'open' ? 'bad' : x.status === 'answered' ? 'good' : 'off';
@@ -2228,7 +2250,7 @@ function renderReports(rows){
         '<span class="pill ' + pill + '">' + esc(RSTATUS[x.status] || x.status) + '</span> ' +
         '<button class="btn ghost tiny" data-rid="' + esc(x.id) + '" data-next="' + next + '">&rarr; ' + esc(RSTATUS[next]) + '</button></div>';
     }).join('');
-    return head + body;
+    return head + head2 + body;
   }).join('');
   $$('#reportRows [data-rid]').forEach(function(b){
     b.onclick = async function(){
@@ -2249,7 +2271,8 @@ function renderReports(rows){
         'trip id: ' + tid,
         'guide: ' + (list[0].destination || '') + ' (' + (list[0].start_date || '?') + ' to ' + (list[0].end_date || '?') + ')',
         'trip diagnostics: ' + JSON.stringify(d.trip || {}),
-        'app: ' + JSON.stringify(d.client || {}), '',
+        'app: ' + JSON.stringify(d.client || {}),
+        'already measured by the worker: ' + JSON.stringify(d.triage || 'not yet measured'), '',
         'Items - each is a support ticket; set it to answered when the fix has landed:'];
       open.forEach(function(x, i){ lines.push((i + 1) + '. [' + x.ref + '] ' + String(x.body || x.subject || '')); });
       lines.push('', 'Process (docs/guide-issue-loop.md): measure first with scripts/guide-audit.mjs <trip id>; fix the guide through the model-free edit-guide refresh/apply; if it is a class of bug add a rule + fixture and regenerate the rulebook; then set each ticket to answered.');
