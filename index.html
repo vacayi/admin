@@ -500,6 +500,7 @@
     <button data-sec="sup-holds">Stuck holds</button>
     <button data-sec="sup-trip">Trip lookup</button>
     <button data-sec="sup-photos">Flagged photos <span id="supPhotoN"></span></button>
+    <button data-sec="sup-reports">Guide reports <span id="supReportN"></span></button>
   </div>
 
   <div class="sec on" id="sup-queue">
@@ -562,6 +563,18 @@
       <p class="blurb">The buttons work if you ever want to step in early: <b>Remove</b>
         deletes it for everyone now; <b>Keep</b> clears the report the way the owner would.</p>
       <div id="flagRows"></div>
+    </div>
+  </div>
+  <div class="sec" id="sup-reports">
+    <div class="card">
+      <h3>Guide reports <span class="tag">what travellers say is wrong, item by item</span></h3>
+      <p class="blurb"><b>Each item is its own ticket</b> with its own reference and its own
+        status, and the traveller sees that status in the app under the report button:
+        <b>Received &rarr; Fixed &rarr; Closed</b>. <b>Copy for Claude</b> puts every OPEN item on
+        that guide, with the ids and versions a fix needs, on the clipboard as one
+        self-contained request. When the fix has landed in their guide, mark the item
+        <b>Fixed</b> here and the app updates on its next open.</p>
+      <div id="reportRows"></div>
     </div>
   </div>
   <div class="sec" id="sup-trip">
@@ -1336,6 +1349,7 @@ async function loadSupport(){
     api("/api/photo-reports").catch(function(){ return []; })]);
   const sup = r[0], cr = r[1];
   renderFlagged(Array.isArray(r[3]) ? r[3] : []);
+  renderReports(sup.rows || []);
 
   const kinds = Object.entries(sup.byKind || {}).map(function(e){ return esc(e[0]) + " " + e[1]; }).join(" · ");
   $("#supKpis").innerHTML =
@@ -1345,7 +1359,9 @@ async function loadSupport(){
       (cr.stuck || []).length ? "bad" : "good") +
     kpi(num(cr.kpis.free_guides), "Free rebuilds ever", "quality-flag giveaways");
 
-  $("#supRows").innerHTML = (sup.rows || []).map(function(x){
+  // Guide reports have their own section; showing them here too would put
+  // one ticket in two queues with two status buttons.
+  $("#supRows").innerHTML = (sup.rows || []).filter(function(x){ return x.kind !== 'guide_issue'; }).map(function(x){
     const next = x.status === "open" ? "answered" : x.status === "answered" ? "closed" : "open";
     return "<tr><td>" + ago(x.created_at) + "</td><td><span class=\"pill vio\">" + esc(x.kind || "—") + "</span></td>" +
       "<td class=\"tiny\">" + esc(x.reply_to || x.display_name || "—") +
@@ -2180,6 +2196,69 @@ function tReport(){
     function(){ toast("Copy failed", true); });
 }
 
+
+// ---------------- GUIDE REPORTS ----------------
+// One support ticket per reported item (kind guide_issue), grouped by guide.
+// The status words are the traveller's: open = Received, answered = Fixed,
+// closed = Closed. Copy-for-Claude formats every OPEN item on a guide with the
+// ids a fix needs, so the handoff is a paste rather than a retype, and the
+// runbook in docs/guide-issue-loop.md says what happens next.
+const RSTATUS = { open: 'Received', answered: 'Fixed', closed: 'Closed' };
+function renderReports(rows){
+  const items = (rows || []).filter(function(x){ return x.kind === 'guide_issue'; });
+  const n = $('#supReportN');
+  const openN = items.filter(function(x){ return x.status === 'open'; }).length;
+  if (n){ n.textContent = openN ? ' · ' + openN : ''; n.className = openN ? 'n' : ''; }
+  const box = $('#reportRows'); if (!box) return;
+  if (!items.length){ box.innerHTML = '<p class="muted">No guide reports. Quiet is allowed.</p>'; return; }
+  const byTrip = {};
+  items.forEach(function(x){ const k = x.trip_id || 'none'; (byTrip[k] = byTrip[k] || []).push(x); });
+  box.innerHTML = Object.keys(byTrip).map(function(tid){
+    const list = byTrip[tid]; const t0 = list[0];
+    const head = '<div class="row" style="align-items:baseline;gap:10px;margin:14px 0 6px">' +
+      '<b>' + esc(t0.destination || 'Unknown guide') + '</b>' +
+      '<code>' + esc(String(tid).slice(0, 8)) + '</code>' +
+      '<span class="tiny">' + esc(t0.display_name || t0.reply_to || '') + '</span>' +
+      '<button class="btn ghost tiny" data-rcopy="' + esc(tid) + '" style="margin-left:auto">Copy for Claude</button></div>';
+    const body = list.map(function(x){
+      const next = x.status === 'open' ? 'answered' : x.status === 'answered' ? 'closed' : 'open';
+      const pill = x.status === 'open' ? 'bad' : x.status === 'answered' ? 'good' : 'off';
+      return '<div class="flagrow"><div class="flagmeta"><code>' + esc(x.ref) + '</code> · ' + ago(x.created_at) +
+        '<br>' + esc(String(x.body || x.subject || '')) + '</div>' +
+        '<span class="pill ' + pill + '">' + esc(RSTATUS[x.status] || x.status) + '</span> ' +
+        '<button class="btn ghost tiny" data-rid="' + esc(x.id) + '" data-next="' + next + '">&rarr; ' + esc(RSTATUS[next]) + '</button></div>';
+    }).join('');
+    return head + body;
+  }).join('');
+  $$('#reportRows [data-rid]').forEach(function(b){
+    b.onclick = async function(){
+      try {
+        await api('/api/support-status', { method: 'POST', body: JSON.stringify({ id: b.dataset.rid, status: b.dataset.next }) });
+        toast('Marked ' + (RSTATUS[b.dataset.next] || b.dataset.next)); loadSupport();
+      } catch (e){ toast(e.message, true); }
+    };
+  });
+  $$('#reportRows [data-rcopy]').forEach(function(b){
+    b.onclick = function(){
+      const tid = b.dataset.rcopy; const list = byTrip[tid] || [];
+      const d = (list[0] && list[0].diagnostics) || {};
+      const open = list.filter(function(x){ return x.status === 'open'; });
+      if (!open.length){ toast('No open items on this guide'); return; }
+      const NLc = String.fromCharCode(10);
+      const lines = ['Fix these reported errors in a vacayi guide.', '',
+        'trip id: ' + tid,
+        'guide: ' + (list[0].destination || '') + ' (' + (list[0].start_date || '?') + ' to ' + (list[0].end_date || '?') + ')',
+        'trip diagnostics: ' + JSON.stringify(d.trip || {}),
+        'app: ' + JSON.stringify(d.client || {}), '',
+        'Items - each is a support ticket; set it to answered when the fix has landed:'];
+      open.forEach(function(x, i){ lines.push((i + 1) + '. [' + x.ref + '] ' + String(x.body || x.subject || '')); });
+      lines.push('', 'Process (docs/guide-issue-loop.md): measure first with scripts/guide-audit.mjs <trip id>; fix the guide through the model-free edit-guide refresh/apply; if it is a class of bug add a rule + fixture and regenerate the rulebook; then set each ticket to answered.');
+      navigator.clipboard.writeText(lines.join(NLc)).then(
+        function(){ toast('Copied ' + open.length + ' item(s) for Claude'); },
+        function(){ toast('Copy failed', true); });
+    };
+  });
+}
 
 // ---------------- FLAGGED PHOTOS ----------------
 // Reviewing a report is a two-button decision, so the row carries exactly what
