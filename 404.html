@@ -746,6 +746,17 @@
       <th>Pipeline</th><th class="num">Guides</th><th class="num">Avg score</th>
       <th class="num">Hard fails</th><th class="num">Clean %</th><th>Last run</th>
     </tr></thead><tbody id="qVersions"></tbody></table></div>
+  </div>
+  <div class="card">
+    <h3>V1 against V2 <span class="tag">by Stage 2 prompt version</span></h3>
+    <p class="blurb">Every build records which Stage 2 prompt wrote it: <b>1</b> is V1's,
+      <b>2</b> is V2's, once V2's own writing ships. Rating, cost and time per prompt,
+      each build counted once, so a guide two people rated is not counted twice. Compare like
+      with like: V2 builds are admin test trips, and V1 is everyone's.</p>
+    <div class="scroll"><table><thead><tr>
+      <th>Prompt</th><th class="num">Builds</th><th class="num">Avg rating</th>
+      <th class="num">Ratings</th><th class="num">Avg cost</th><th class="num">Avg time</th>
+    </tr></thead><tbody id="qPrompt"></tbody></table></div>
   </div></div>
 
   <div class="sec" id="ai-flags"><div class="card">
@@ -1749,8 +1760,8 @@ $("#statsUnresetBtn").onclick = async function(){
 // ---------- AI LAB ----------
 async function loadAilab(){
   const r = await Promise.all([api("/api/guide-quality"), api("/api/complaints"),
-    api("/api/edits"), api("/api/feedback")]);
-  const q = r[0], comp = r[1], ed = r[2], fb = r[3];
+    api("/api/edits"), api("/api/feedback"), api("/api/quality").catch(function(){ return null; })]);
+  const q = r[0], comp = r[1], ed = r[2], fb = r[3], pq = r[4];
 
   $("#qKpis").innerHTML =
     kpi(q.kpis.avg_score == null ? "—" : q.kpis.avg_score, "Avg score · 30d") +
@@ -1774,6 +1785,25 @@ async function loadAilab(){
         '<span class="pill ' + (clean >= 80 ? "on" : clean >= 50 ? "warn" : "bad") + '">' + clean + "%</span>") + "</td>" +
       "<td>" + ago(v.last_run) + "</td></tr>";
   }).join("");
+
+  // V1 AGAINST V2 (V2 Foundation): admin_prompt_quality, one row per Stage 2
+  // prompt version. 1 is V1's prompt; 2 is V2's, once its writing ships.
+  // ONLY AN ARRAY IS A TABLE. A failed request answers null (the catch above)
+  // and a 2xx that is not a list is no table either: both say so in their own
+  // row, rather than passing for "no builds yet" or throwing and blanking every
+  // panel drawn after this one.
+  const pqRows = Array.isArray(pq) ? pq : null;
+  $("#qPrompt").innerHTML = pqRows === null
+    ? '<tr><td colspan="6" class="muted">Could not load the prompt versions. Reload the tab to try again.</td></tr>'
+    : pqRows.map(function(p){
+    const name = p.prompt_version === 2 ? "2 · V2" : p.prompt_version === 1 ? "1 · V1" : String(p.prompt_version);
+    return "<tr><td><code>" + esc(name) + "</code></td>" +
+      '<td class="num">' + num(p.guides) + "</td>" +
+      '<td class="num">' + (p.avg_rating != null ? esc(p.avg_rating) + " ★" : "—") + "</td>" +
+      '<td class="num">' + num(p.ratings) + "</td>" +
+      '<td class="num">' + (p.avg_cost != null ? usd4(p.avg_cost) : "—") + "</td>" +
+      '<td class="num">' + (p.avg_seconds != null ? esc(p.avg_seconds) + " s" : "—") + "</td></tr>";
+  }).join("") || '<tr><td colspan="6" class="muted">No build has recorded a prompt version yet. The first guide built after the V2 Foundation ships starts this table.</td></tr>';
 
   $("#qFlags").innerHTML = (q.flags || []).map(function(f){
     return "<tr><td><code>" + esc(f.flag) + "</code></td>" +
